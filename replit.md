@@ -16,12 +16,34 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
+## Application: CrewCommand (Crew Scheduling & Job Management)
+
+Full-stack field operations management app. Workers can book/schedule jobs, assign crew members, manage job tasks, use internal group messaging per job, and share photos per job.
+
+### Pages / Routes
+- `/` — Dashboard: summary stats (active jobs, crew count, pending tasks, completed jobs), upcoming schedule, task completion chart
+- `/jobs` — Jobs list with status badges and date ranges; "New Job" dialog
+- `/jobs/:id` — Job detail with 5 tabs: Overview, Crew, Tasks, Chat, Photos
+- `/crew` — Crew member cards with avatar/role/contact
+- `/crew/:id` — Crew member detail
+
+### Sample Data Seeded
+- 5 crew members: Marcus Johnson (Foreman), Darius Webb (Electrician), Tamara Reyes (Plumber), Ray Okafor (Laborer), Sandra Kim (Supervisor)
+- 4 jobs: Riverside Office Renovation (in_progress, IDs assigned), Lakeview Residential Rewire (scheduled), Downtown Plaza Plumbing (scheduled), Cedar Creek Site Cleanup (completed)
+- Tasks per job, crew assignments, and chat messages seeded via SQL
+
+### Key Design Decisions
+- Photos stored as base64 data URLs in the DB (20MB JSON body limit in Express)
+- `jobId` injected from URL path param in backend, NOT from request body, for tasks/messages/photos
+- `useAssignCrewToJob` replaces all crew — add/remove must send full updated list
+
 ## Structure
 
 ```text
 artifacts-monorepo/
 ├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
+│   ├── api-server/         # Express API server
+│   └── crew-scheduler/     # React + Vite frontend (CrewCommand app)
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
@@ -34,6 +56,14 @@ artifacts-monorepo/
 ├── tsconfig.json           # Root TS project references
 └── package.json            # Root package with hoisted devDeps
 ```
+
+### DB Schema Tables
+- `crew_members` — id, name, role, phone, email, avatar_url, created_at
+- `jobs` — id, title, location, scope, status (scheduled/in_progress/completed/cancelled), start_date, end_date, notes, created_at
+- `job_crew` — id, job_id (FK→jobs), crew_id (FK→crew_members) — many-to-many crew assignment
+- `tasks` — id, job_id (FK→jobs), title, description, status (pending/in_progress/completed), assigned_to_id (FK→crew_members), created_at
+- `messages` — id, job_id (FK→jobs), sender_name, content, photo_url, created_at
+- `photos` — id, job_id (FK→jobs), url (base64 data URL), caption, uploaded_by, created_at
 
 ## TypeScript & Composite Projects
 

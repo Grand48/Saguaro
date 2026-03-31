@@ -1,0 +1,923 @@
+import { useState, useRef } from "react";
+import { useParams, Link } from "wouter";
+import { 
+  useGetJob, getGetJobQueryKey,
+  useUpdateJob,
+  useDeleteJob, getListJobsQueryKey,
+  useListJobTasks, getListJobTasksQueryKey,
+  useCreateTask,
+  useUpdateTask,
+  useDeleteTask,
+  useListJobMessages, getListJobMessagesQueryKey,
+  useSendMessage,
+  useListJobPhotos, getListJobPhotosQueryKey,
+  useUploadPhoto,
+  useListCrew, getListCrewQueryKey,
+  useGetJobCrew, getGetJobCrewQueryKey,
+  useAssignCrewToJob,
+  useRemoveCrewFromJob,
+  getGetUpcomingJobsQueryKey,
+  getGetDashboardSummaryQueryKey
+} from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { formatDate, formatDateTime } from "@/lib/format";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  MapPin, Calendar as CalendarIcon, FileText, CheckSquare, 
+  MessageSquare, Camera, Users, Plus, Trash2, Send, Paperclip, X
+} from "lucide-react";
+
+export default function JobDetail() {
+  const { id } = useParams();
+  const jobId = parseInt(id || "0", 10);
+  
+  const { data: job, isLoading, error } = useGetJob(jobId, { 
+    query: { enabled: !!jobId, queryKey: getGetJobQueryKey(jobId) } 
+  });
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/3" />
+        <Skeleton className="h-6 w-1/4" />
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    );
+  }
+
+  if (error || !job) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-2xl font-bold text-destructive">Job Not Found</h2>
+        <p className="text-muted-foreground mt-2">The job you're looking for doesn't exist or you don't have permission to view it.</p>
+        <Button asChild className="mt-6">
+          <Link href="/jobs">Back to Jobs</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 bg-card border border-border p-6 rounded-lg shadow-sm">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold tracking-tight">{job.title}</h1>
+            <StatusBadge status={job.status} />
+          </div>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 text-primary" />
+              <span>{job.location}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <CalendarIcon className="h-4 w-4 text-primary" />
+              <span>{formatDate(job.startDate)} {job.endDate ? `- ${formatDate(job.endDate)}` : ""}</span>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <UpdateJobDialog job={job} />
+          <DeleteJobDialog jobId={job.id} jobTitle={job.title} />
+        </div>
+      </div>
+
+      {/* Main Content Tabs */}
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid grid-cols-5 w-full md:w-auto h-auto p-1 bg-muted/50 rounded-md">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><FileText className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">Overview</span></TabsTrigger>
+          <TabsTrigger value="crew" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Users className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">Crew</span></TabsTrigger>
+          <TabsTrigger value="tasks" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><CheckSquare className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">Tasks</span></TabsTrigger>
+          <TabsTrigger value="chat" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><MessageSquare className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">Chat</span></TabsTrigger>
+          <TabsTrigger value="photos" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Camera className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">Photos</span></TabsTrigger>
+        </TabsList>
+        
+        <div className="mt-6">
+          <TabsContent value="overview" className="space-y-6 outline-none focus-visible:ring-0">
+            <Card className="border-border shadow-sm">
+              <CardHeader className="pb-3 border-b border-border bg-muted/20">
+                <CardTitle className="text-lg">Scope of Work</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{job.scope}</p>
+              </CardContent>
+            </Card>
+            
+            {job.notes && (
+              <Card className="border-border shadow-sm">
+                <CardHeader className="pb-3 border-b border-border bg-muted/20">
+                  <CardTitle className="text-lg">Additional Notes</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-6">
+                  <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">{job.notes}</p>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="crew" className="outline-none focus-visible:ring-0">
+            <JobCrewTab jobId={jobId} currentCrew={job.crew} />
+          </TabsContent>
+
+          <TabsContent value="tasks" className="outline-none focus-visible:ring-0">
+            <JobTasksTab jobId={jobId} crew={job.crew} />
+          </TabsContent>
+
+          <TabsContent value="chat" className="outline-none focus-visible:ring-0">
+            <JobChatTab jobId={jobId} />
+          </TabsContent>
+
+          <TabsContent value="photos" className="outline-none focus-visible:ring-0">
+            <JobPhotosTab jobId={jobId} />
+          </TabsContent>
+        </div>
+      </Tabs>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// STATUS BADGE COMPONENT
+// -----------------------------------------------------------------------------
+
+function StatusBadge({ status }: { status: string }) {
+  switch (status) {
+    case "scheduled":
+      return <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800 uppercase text-[10px] tracking-wider font-bold shrink-0">Scheduled</Badge>;
+    case "in_progress":
+      return <Badge variant="outline" className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800 uppercase text-[10px] tracking-wider font-bold shrink-0">In Progress</Badge>;
+    case "completed":
+      return <Badge variant="outline" className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 uppercase text-[10px] tracking-wider font-bold shrink-0">Completed</Badge>;
+    case "cancelled":
+      return <Badge variant="outline" className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800 uppercase text-[10px] tracking-wider font-bold shrink-0">Cancelled</Badge>;
+    default:
+      return <Badge variant="outline" className="uppercase text-[10px] tracking-wider font-bold shrink-0">{status}</Badge>;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// UPDATE JOB DIALOG
+// -----------------------------------------------------------------------------
+
+const updateJobSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  location: z.string().min(1, "Location is required"),
+  scope: z.string().min(1, "Scope is required"),
+  status: z.enum(["scheduled", "in_progress", "completed", "cancelled"]),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+function UpdateJobDialog({ job }: { job: any }) {
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const updateJob = useUpdateJob();
+  
+  const form = useForm<z.infer<typeof updateJobSchema>>({
+    resolver: zodResolver(updateJobSchema),
+    defaultValues: {
+      title: job.title,
+      location: job.location,
+      scope: job.scope,
+      status: job.status,
+      startDate: job.startDate,
+      endDate: job.endDate || "",
+      notes: job.notes || "",
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof updateJobSchema>) => {
+    updateJob.mutate({
+      id: job.id,
+      data: {
+        ...values,
+        endDate: values.endDate || undefined,
+        notes: values.notes || undefined,
+      }
+    }, {
+      onSuccess: () => {
+        toast({ title: "Job Updated", description: "Job details have been saved." });
+        queryClient.invalidateQueries({ queryKey: getGetJobQueryKey(job.id) });
+        queryClient.invalidateQueries({ queryKey: getListJobsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        setOpen(false);
+      }
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">Edit Job</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle>Edit Job: {job.title}</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField control={form.control} name="title" render={({ field }) => (
+              <FormItem><FormLabel>Job Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="location" render={({ field }) => (
+              <FormItem><FormLabel>Location</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="startDate" render={({ field }) => (
+                <FormItem><FormLabel>Start Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+              <FormField control={form.control} name="endDate" render={({ field }) => (
+                <FormItem><FormLabel>End Date</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="status" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Status</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="scheduled">Scheduled</SelectItem>
+                    <SelectItem value="in_progress">In Progress</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="scope" render={({ field }) => (
+              <FormItem><FormLabel>Scope</FormLabel><FormControl><Textarea className="h-20" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <div className="pt-2 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={updateJob.isPending}>{updateJob.isPending ? "Saving..." : "Save Changes"}</Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// DELETE JOB DIALOG
+// -----------------------------------------------------------------------------
+
+function DeleteJobDialog({ jobId, jobTitle }: { jobId: number; jobTitle: string }) {
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const deleteJob = useDeleteJob();
+
+  const handleDelete = () => {
+    deleteJob.mutate({ id: jobId }, {
+      onSuccess: () => {
+        toast({ title: "Job Deleted", description: "The job has been removed." });
+        queryClient.invalidateQueries({ queryKey: getListJobsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetUpcomingJobsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        window.location.href = "/jobs"; // Navigate back
+      }
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="destructive" size="sm" className="bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground border-0">
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Job</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{jobTitle}"? This action cannot be undone and will delete all tasks, photos, and messages associated with this job.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="mt-4">
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDelete} disabled={deleteJob.isPending}>
+            {deleteJob.isPending ? "Deleting..." : "Delete Job"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// CREW TAB
+// -----------------------------------------------------------------------------
+
+function JobCrewTab({ jobId, currentCrew }: { jobId: number, currentCrew: any[] }) {
+  const { data: allCrew, isLoading } = useListCrew();
+  const queryClient = useQueryClient();
+  const assignCrew = useAssignCrewToJob();
+  const removeCrew = useRemoveCrewFromJob();
+  const { toast } = useToast();
+
+  const currentCrewIds = new Set(currentCrew.map(c => c.id));
+  const availableCrew = allCrew?.filter(c => !currentCrewIds.has(c.id)) || [];
+
+  const handleAssign = (crewId: number) => {
+    assignCrew.mutate({
+      id: jobId,
+      data: { crewIds: [...currentCrew.map(c => c.id), crewId] }
+    }, {
+      onSuccess: () => {
+        toast({ title: "Crew Member Added", description: "Successfully added to the job." });
+        queryClient.invalidateQueries({ queryKey: getGetJobQueryKey(jobId) });
+      }
+    });
+  };
+
+  const handleRemove = (crewId: number) => {
+    removeCrew.mutate({
+      id: jobId,
+      crewId,
+    }, {
+      onSuccess: () => {
+        toast({ title: "Crew Member Removed", description: "Successfully removed from the job." });
+        queryClient.invalidateQueries({ queryKey: getGetJobQueryKey(jobId) });
+      }
+    });
+  };
+
+  return (
+    <div className="grid md:grid-cols-2 gap-6">
+      <Card className="border-border shadow-sm h-fit">
+        <CardHeader className="pb-3 border-b border-border bg-muted/20">
+          <CardTitle className="text-lg flex justify-between items-center">
+            Assigned Crew ({currentCrew.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {currentCrew.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <Users className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No crew assigned to this job.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {currentCrew.map((member) => (
+                <div key={member.id} className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 border border-border">
+                      <AvatarImage src={member.avatarUrl || ""} />
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                        {member.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-sm">{member.name}</p>
+                      <p className="text-xs text-muted-foreground">{member.role}</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => handleRemove(member.id)} disabled={removeCrew.isPending} className="text-muted-foreground hover:text-destructive h-8 w-8 p-0 rounded-full">
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border shadow-sm h-fit">
+        <CardHeader className="pb-3 border-b border-border bg-muted/20">
+          <CardTitle className="text-lg">Available Crew</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {isLoading ? (
+            <div className="p-4 space-y-4">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : availableCrew.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">
+              <p>All available crew members are already assigned to this job.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {availableCrew.map((member) => (
+                <div key={member.id} className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8 border border-border">
+                      <AvatarImage src={member.avatarUrl || ""} />
+                      <AvatarFallback className="bg-secondary text-secondary-foreground font-semibold text-xs">
+                        {member.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium text-sm">{member.name}</p>
+                      <p className="text-xs text-muted-foreground">{member.role}</p>
+                    </div>
+                  </div>
+                  <Button variant="secondary" size="sm" onClick={() => handleAssign(member.id)} disabled={assignCrew.isPending} className="h-8 text-xs font-semibold">
+                    <Plus className="h-3 w-3 mr-1" /> Add
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// TASKS TAB
+// -----------------------------------------------------------------------------
+
+function JobTasksTab({ jobId, crew }: { jobId: number, crew: any[] }) {
+  const { data: tasks, isLoading } = useListJobTasks(jobId, { query: { enabled: !!jobId, queryKey: getListJobTasksQueryKey(jobId) } });
+  const queryClient = useQueryClient();
+  const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
+  const { toast } = useToast();
+
+  const handleToggleTask = (taskId: number, currentStatus: string) => {
+    const newStatus = currentStatus === "completed" ? "pending" : "completed";
+    
+    // Optimistic update
+    queryClient.setQueryData(getListJobTasksQueryKey(jobId), (old: any) => {
+      if (!old) return old;
+      return old.map((t: any) => t.id === taskId ? { ...t, status: newStatus } : t);
+    });
+
+    updateTask.mutate({
+      id: taskId,
+      data: { status: newStatus as any }
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetJobQueryKey(jobId) }); // Update overall job progress
+      },
+      onError: () => {
+        queryClient.invalidateQueries({ queryKey: getListJobTasksQueryKey(jobId) });
+        toast({ title: "Error", description: "Failed to update task status.", variant: "destructive" });
+      }
+    });
+  };
+
+  const handleDeleteTask = (taskId: number) => {
+    deleteTask.mutate({ id: taskId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListJobTasksQueryKey(jobId) });
+        queryClient.invalidateQueries({ queryKey: getGetJobQueryKey(jobId) });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+      }
+    });
+  };
+
+  const completedCount = tasks?.filter((t) => t.status === "completed").length || 0;
+  const totalCount = tasks?.length || 0;
+  const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-end gap-4 bg-card p-4 border border-border rounded-lg shadow-sm">
+        <div className="w-full max-w-md">
+          <div className="flex justify-between items-end mb-2">
+            <span className="text-sm font-semibold">Task Progress</span>
+            <span className="text-sm text-muted-foreground font-medium">{completedCount} of {totalCount} completed</span>
+          </div>
+          <div className="h-2.5 w-full bg-secondary rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-primary transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+        <CreateTaskDialog jobId={jobId} crew={crew} />
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-2">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      ) : !tasks || tasks.length === 0 ? (
+        <div className="p-12 text-center text-muted-foreground border border-dashed border-border rounded-lg bg-card/50">
+          <CheckSquare className="h-8 w-8 mx-auto mb-3 opacity-50" />
+          <p>No tasks created for this job yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {tasks.map((task) => (
+            <div 
+              key={task.id} 
+              className={`flex items-start gap-4 p-4 border rounded-lg transition-colors ${
+                task.status === "completed" 
+                  ? "bg-muted/30 border-muted text-muted-foreground" 
+                  : "bg-card border-border shadow-sm hover:border-primary/30"
+              }`}
+            >
+              <div className="pt-1">
+                <Checkbox 
+                  checked={task.status === "completed"} 
+                  onCheckedChange={() => handleToggleTask(task.id, task.status)}
+                  className="h-5 w-5 rounded-sm border-2 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className={`font-semibold text-sm ${task.status === "completed" ? "line-through" : "text-foreground"}`}>
+                  {task.title}
+                </p>
+                {task.description && (
+                  <p className="text-sm mt-1">{task.description}</p>
+                )}
+                {task.assignedTo && (
+                  <div className="flex items-center gap-1.5 mt-3">
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={task.assignedTo.avatarUrl || ""} />
+                      <AvatarFallback className="text-[9px] bg-secondary text-secondary-foreground">
+                        {task.assignedTo.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-medium">Assigned to: {task.assignedTo.name}</span>
+                  </div>
+                )}
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => handleDeleteTask(task.id)}
+                className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const createTaskSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().optional(),
+  assignedToId: z.string().optional(), // store as string in form, convert to number
+});
+
+function CreateTaskDialog({ jobId, crew }: { jobId: number, crew: any[] }) {
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const createTask = useCreateTask();
+  
+  const form = useForm<z.infer<typeof createTaskSchema>>({
+    resolver: zodResolver(createTaskSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      assignedToId: "unassigned",
+    },
+  });
+
+  const onSubmit = (values: z.infer<typeof createTaskSchema>) => {
+    const assignedToIdNum = values.assignedToId && values.assignedToId !== "unassigned" 
+      ? parseInt(values.assignedToId, 10) 
+      : undefined;
+
+    createTask.mutate({
+      id: jobId,
+      data: {
+        title: values.title,
+        description: values.description || undefined,
+        status: "pending",
+        assignedToId: assignedToIdNum,
+      } as any
+    }, {
+      onSuccess: () => {
+        toast({ title: "Task Added", description: "New task added to the job." });
+        queryClient.invalidateQueries({ queryKey: getListJobTasksQueryKey(jobId) });
+        queryClient.invalidateQueries({ queryKey: getGetJobQueryKey(jobId) }); // Update overall progress
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        form.reset();
+        setOpen(false);
+      }
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="font-semibold shadow-sm">
+          <Plus className="h-4 w-4 mr-2" /> Add Task
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Add New Task</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField control={form.control} name="title" render={({ field }) => (
+              <FormItem><FormLabel>Task</FormLabel><FormControl><Input placeholder="What needs to be done?" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="description" render={({ field }) => (
+              <FormItem><FormLabel>Details (Optional)</FormLabel><FormControl><Textarea className="h-20 resize-none" {...field} /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="assignedToId" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Assign To</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Anyone" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="unassigned">Anyone (Unassigned)</SelectItem>
+                    {crew.map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>{c.name} - {c.role}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="pt-2 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={createTask.isPending}>{createTask.isPending ? "Adding..." : "Add Task"}</Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// CHAT TAB
+// -----------------------------------------------------------------------------
+
+function JobChatTab({ jobId }: { jobId: number }) {
+  const { data: messages, isLoading } = useListJobMessages(jobId, { query: { enabled: !!jobId, queryKey: getListJobMessagesQueryKey(jobId) } });
+  const queryClient = useQueryClient();
+  const sendMessage = useSendMessage();
+  const [content, setContent] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto scroll to bottom when messages load
+  if (scrollRef.current) {
+    scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }
+
+  const handleSend = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!content.trim()) return;
+
+    sendMessage.mutate({
+      id: jobId,
+      data: {
+        senderName: "Foreman",
+        content: content.trim(),
+      } as any
+    }, {
+      onSuccess: () => {
+        setContent("");
+        queryClient.invalidateQueries({ queryKey: getListJobMessagesQueryKey(jobId) });
+        setTimeout(() => {
+          if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }, 100);
+      }
+    });
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Str = event.target?.result as string;
+      
+      sendMessage.mutate({
+        id: jobId,
+        data: {
+          senderName: "Foreman",
+          content: "Shared a photo",
+          photoUrl: base64Str,
+        } as any
+      }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListJobMessagesQueryKey(jobId) });
+          queryClient.invalidateQueries({ queryKey: getListJobPhotosQueryKey(jobId) }); // Might show up in gallery
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="flex flex-col h-[600px] bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+      <div className="p-4 border-b border-border bg-muted/20">
+        <h3 className="font-semibold flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-primary" />
+          Crew Chat
+        </h3>
+      </div>
+      
+      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        {isLoading ? (
+          <div className="space-y-4">
+            <Skeleton className="h-16 w-3/4 rounded-lg rounded-tl-none" />
+            <Skeleton className="h-16 w-3/4 rounded-lg rounded-tr-none ml-auto" />
+            <Skeleton className="h-24 w-1/2 rounded-lg rounded-tl-none" />
+          </div>
+        ) : !messages || messages.length === 0 ? (
+          <div className="h-full flex flex-col items-center justify-center text-muted-foreground opacity-50 py-12">
+            <MessageSquare className="h-12 w-12 mb-4" />
+            <p>No messages yet. Start the conversation!</p>
+          </div>
+        ) : (
+          <div className="space-y-6 flex flex-col justify-end min-h-full">
+            {messages.map((msg, i) => {
+              const isMe = msg.senderName === "Foreman";
+              const showHeader = i === 0 || messages[i-1].senderName !== msg.senderName || 
+                (new Date(msg.createdAt).getTime() - new Date(messages[i-1].createdAt).getTime() > 1000 * 60 * 5);
+
+              return (
+                <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                  {showHeader && (
+                    <div className="flex items-center gap-2 mb-1.5 px-1">
+                      <span className="text-xs font-semibold text-foreground/80">{msg.senderName}</span>
+                      <span className="text-[10px] text-muted-foreground">{formatDateTime(msg.createdAt)}</span>
+                    </div>
+                  )}
+                  <div 
+                    className={`max-w-[80%] rounded-2xl px-4 py-2.5 shadow-sm text-sm ${
+                      isMe 
+                        ? 'bg-primary text-primary-foreground rounded-tr-none' 
+                        : 'bg-secondary text-secondary-foreground rounded-tl-none border border-border/50'
+                    }`}
+                  >
+                    {msg.photoUrl && (
+                      <div className="mb-2 rounded-md overflow-hidden bg-black/10">
+                        <img src={msg.photoUrl} alt="Attachment" className="max-h-60 w-auto object-contain" />
+                      </div>
+                    )}
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </ScrollArea>
+
+      <div className="p-3 border-t border-border bg-card">
+        <form onSubmit={handleSend} className="flex gap-2">
+          <input 
+            type="file" 
+            accept="image/*" 
+            className="hidden" 
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+          />
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="icon" 
+            className="shrink-0 bg-muted/50 border-0 hover:bg-muted"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Paperclip className="h-4 w-4 text-muted-foreground" />
+          </Button>
+          <Input 
+            value={content} 
+            onChange={(e) => setContent(e.target.value)} 
+            placeholder="Message the crew..." 
+            className="flex-1 bg-muted/50 border-0 focus-visible:ring-1"
+          />
+          <Button type="submit" size="icon" disabled={!content.trim() || sendMessage.isPending} className="shrink-0 rounded-full h-10 w-10">
+            <Send className="h-4 w-4 ml-0.5" />
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// PHOTOS TAB
+// -----------------------------------------------------------------------------
+
+function JobPhotosTab({ jobId }: { jobId: number }) {
+  const { data: photos, isLoading } = useListJobPhotos(jobId, { query: { enabled: !!jobId, queryKey: getListJobPhotosQueryKey(jobId) } });
+  const queryClient = useQueryClient();
+  const uploadPhoto = useUploadPhoto();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Str = event.target?.result as string;
+      
+      // We need a prompt for caption, simulating with window.prompt for speed 
+      // in a real app we'd use a dialog
+      const caption = window.prompt("Enter a caption for this photo (optional):") || "";
+      
+      toast({ title: "Uploading...", description: "Photo is being uploaded." });
+
+      uploadPhoto.mutate({
+        id: jobId,
+        data: {
+          url: base64Str,
+          caption: caption || undefined,
+          uploadedBy: "Foreman",
+        } as any
+      }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListJobPhotosQueryKey(jobId) });
+          toast({ title: "Success", description: "Photo uploaded to gallery." });
+          if (fileInputRef.current) fileInputRef.current.value = '';
+        }
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center bg-card p-4 rounded-lg border border-border shadow-sm">
+        <div>
+          <h3 className="font-semibold">Site Gallery</h3>
+          <p className="text-sm text-muted-foreground">Photos and documents from the job site.</p>
+        </div>
+        <div>
+          <input 
+            type="file" 
+            accept="image/*" 
+            className="hidden" 
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+          />
+          <Button onClick={() => fileInputRef.current?.click()} className="font-semibold shadow-sm">
+            <Camera className="h-4 w-4 mr-2" /> Upload Photo
+          </Button>
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="aspect-square rounded-lg" />)}
+        </div>
+      ) : !photos || photos.length === 0 ? (
+        <div className="p-16 text-center text-muted-foreground border border-dashed border-border rounded-lg bg-card/50">
+          <Camera className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="text-lg font-medium text-foreground mb-1">No photos yet</p>
+          <p className="text-sm">Upload photos of the site, progress, or completed work.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {photos.map((photo) => (
+            <div key={photo.id} className="group relative aspect-square rounded-lg overflow-hidden border border-border bg-card shadow-sm cursor-zoom-in">
+              <img 
+                src={photo.url} 
+                alt={photo.caption || "Job photo"} 
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3">
+                <p className="text-white text-sm font-medium leading-tight line-clamp-2">
+                  {photo.caption || "Untitled"}
+                </p>
+                <p className="text-white/70 text-[10px] mt-1 flex justify-between">
+                  <span>By {photo.uploadedBy}</span>
+                  <span>{formatDate(photo.createdAt)}</span>
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
