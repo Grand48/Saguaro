@@ -81,7 +81,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
           <div className="bg-primary p-2 rounded-md">
             <Hammer className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="font-bold tracking-tight">CrewCommand</span>
+          <span className="font-bold tracking-tight">Saguaro</span>
         </div>
         <div className="flex-1 overflow-y-auto">
           <NavItems />
@@ -106,7 +106,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
             <div className="bg-primary p-1.5 rounded-md">
               <Hammer className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-bold tracking-tight">CrewCommand</span>
+            <span className="font-bold tracking-tight">Saguaro</span>
           </div>
           <Sheet>
             <SheetTrigger asChild>
@@ -119,7 +119,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
                 <div className="bg-primary p-2 rounded-md">
                   <Hammer className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <span className="font-bold tracking-tight">CrewCommand</span>
+                <span className="font-bold tracking-tight">Saguaro</span>
               </div>
               <NavItems />
             </SheetContent>

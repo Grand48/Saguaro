@@ -16,7 +16,7 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 
-## Application: CrewCommand (Crew Scheduling & Job Management)
+## Application: Saguaro (Crew Scheduling & Job Management)
 
 Full-stack field operations management app. Workers can book/schedule jobs, assign crew members, manage job tasks, use internal group messaging per job, and share photos per job.
 
@@ -46,7 +46,7 @@ Full-stack field operations management app. Workers can book/schedule jobs, assi
 artifacts-monorepo/
 ├── artifacts/              # Deployable applications
 │   ├── api-server/         # Express API server
-│   └── crew-scheduler/     # React + Vite frontend (CrewCommand app)
+│   └── crew-scheduler/     # React + Vite frontend (Saguaro app)
 ├── lib/                    # Shared libraries
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
