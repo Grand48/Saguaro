@@ -14,6 +14,7 @@ import LocationDetail from "./pages/locations/[id]";
 import TimeOff from "./pages/time-off/index";
 import Notifications from "./pages/notifications/index";
 import TimeClock from "./pages/time-clock/index";
+import SideQuests from "./pages/quests/index";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ function Router() {
         <Route path="/time-off" component={TimeOff} />
         <Route path="/time-clock" component={TimeClock} />
         <Route path="/notifications" component={Notifications} />
+        <Route path="/quests" component={SideQuests} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

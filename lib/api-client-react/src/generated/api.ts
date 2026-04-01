@@ -26,6 +26,7 @@ import type {
   CreateJobInput,
   CreateLocationInput,
   CreateNotificationInput,
+  CreateSideQuestInput,
   CreateTaskInput,
   CreateTimeOffInput,
   CrewDocument,
@@ -48,12 +49,14 @@ import type {
   NotificationWithStats,
   Photo,
   SendMessageInput,
+  SideQuest,
   Task,
   TimeEntry,
   TimeOffRequest,
   TimeOffRequestWithCrew,
   UpdateEquipmentInput,
   UpdateJobContactInput,
+  UpdateSideQuestInput,
   UpdateTaskInput,
   UpdateTimeOffInput,
   UploadCrewDocumentInput,
@@ -5192,3 +5195,335 @@ export function useGetUpcomingJobs<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List all side quests
+ */
+export const getListSideQuestsUrl = () => {
+  return `/api/side-quests`;
+};
+
+export const listSideQuests = async (
+  options?: RequestInit,
+): Promise<SideQuest[]> => {
+  return customFetch<SideQuest[]>(getListSideQuestsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListSideQuestsQueryKey = () => {
+  return [`/api/side-quests`] as const;
+};
+
+export const getListSideQuestsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSideQuests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSideQuests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListSideQuestsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listSideQuests>>> = ({
+    signal,
+  }) => listSideQuests({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSideQuests>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSideQuestsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSideQuests>>
+>;
+export type ListSideQuestsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all side quests
+ */
+
+export function useListSideQuests<
+  TData = Awaited<ReturnType<typeof listSideQuests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSideQuests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSideQuestsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a new side quest
+ */
+export const getCreateSideQuestUrl = () => {
+  return `/api/side-quests`;
+};
+
+export const createSideQuest = async (
+  createSideQuestInput: CreateSideQuestInput,
+  options?: RequestInit,
+): Promise<SideQuest> => {
+  return customFetch<SideQuest>(getCreateSideQuestUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createSideQuestInput),
+  });
+};
+
+export const getCreateSideQuestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSideQuest>>,
+    TError,
+    { data: BodyType<CreateSideQuestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createSideQuest>>,
+  TError,
+  { data: BodyType<CreateSideQuestInput> },
+  TContext
+> => {
+  const mutationKey = ["createSideQuest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createSideQuest>>,
+    { data: BodyType<CreateSideQuestInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createSideQuest(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateSideQuestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createSideQuest>>
+>;
+export type CreateSideQuestMutationBody = BodyType<CreateSideQuestInput>;
+export type CreateSideQuestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a new side quest
+ */
+export const useCreateSideQuest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createSideQuest>>,
+    TError,
+    { data: BodyType<CreateSideQuestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createSideQuest>>,
+  TError,
+  { data: BodyType<CreateSideQuestInput> },
+  TContext
+> => {
+  return useMutation(getCreateSideQuestMutationOptions(options));
+};
+
+/**
+ * @summary Update a side quest (lock/unlock, claim, complete)
+ */
+export const getUpdateSideQuestUrl = (id: number) => {
+  return `/api/side-quests/${id}`;
+};
+
+export const updateSideQuest = async (
+  id: number,
+  updateSideQuestInput: UpdateSideQuestInput,
+  options?: RequestInit,
+): Promise<SideQuest> => {
+  return customFetch<SideQuest>(getUpdateSideQuestUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateSideQuestInput),
+  });
+};
+
+export const getUpdateSideQuestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSideQuest>>,
+    TError,
+    { id: number; data: BodyType<UpdateSideQuestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateSideQuest>>,
+  TError,
+  { id: number; data: BodyType<UpdateSideQuestInput> },
+  TContext
+> => {
+  const mutationKey = ["updateSideQuest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateSideQuest>>,
+    { id: number; data: BodyType<UpdateSideQuestInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateSideQuest(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateSideQuestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateSideQuest>>
+>;
+export type UpdateSideQuestMutationBody = BodyType<UpdateSideQuestInput>;
+export type UpdateSideQuestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a side quest (lock/unlock, claim, complete)
+ */
+export const useUpdateSideQuest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateSideQuest>>,
+    TError,
+    { id: number; data: BodyType<UpdateSideQuestInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateSideQuest>>,
+  TError,
+  { id: number; data: BodyType<UpdateSideQuestInput> },
+  TContext
+> => {
+  return useMutation(getUpdateSideQuestMutationOptions(options));
+};
+
+/**
+ * @summary Delete a side quest
+ */
+export const getDeleteSideQuestUrl = (id: number) => {
+  return `/api/side-quests/${id}`;
+};
+
+export const deleteSideQuest = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteSideQuestUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteSideQuestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSideQuest>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteSideQuest>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteSideQuest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteSideQuest>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteSideQuest(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteSideQuestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteSideQuest>>
+>;
+
+export type DeleteSideQuestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a side quest
+ */
+export const useDeleteSideQuest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSideQuest>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteSideQuest>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteSideQuestMutationOptions(options));
+};

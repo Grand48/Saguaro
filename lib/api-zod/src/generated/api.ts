@@ -1081,3 +1081,93 @@ export const GetUpcomingJobsResponseItem = zod.object({
   createdAt: zod.coerce.date(),
 });
 export const GetUpcomingJobsResponse = zod.array(GetUpcomingJobsResponseItem);
+
+/**
+ * @summary List all side quests
+ */
+export const ListSideQuestsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  priority: zod.enum(["low", "medium", "high", "urgent"]),
+  status: zod.enum(["open", "claimed", "completed"]),
+  adminLocked: zod.boolean(),
+  claimedByCrewId: zod.number().nullish(),
+  claimedAt: zod.coerce.date().nullish(),
+  completedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  claimedBy: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      role: zod.string(),
+      phone: zod.string().nullish(),
+      email: zod.string().nullish(),
+      avatarUrl: zod.string().nullish(),
+      createdAt: zod.coerce.date(),
+    })
+    .nullish(),
+});
+export const ListSideQuestsResponse = zod.array(ListSideQuestsResponseItem);
+
+/**
+ * @summary Create a new side quest
+ */
+export const createSideQuestBodyPriorityDefault = `medium`;
+export const createSideQuestBodyAdminLockedDefault = true;
+
+export const CreateSideQuestBody = zod.object({
+  title: zod.string(),
+  description: zod.string().optional(),
+  priority: zod
+    .enum(["low", "medium", "high", "urgent"])
+    .default(createSideQuestBodyPriorityDefault),
+  adminLocked: zod.boolean().default(createSideQuestBodyAdminLockedDefault),
+});
+
+/**
+ * @summary Update a side quest (lock/unlock, claim, complete)
+ */
+export const UpdateSideQuestParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateSideQuestBody = zod.object({
+  title: zod.string().optional(),
+  description: zod.string().nullish(),
+  priority: zod.enum(["low", "medium", "high", "urgent"]).optional(),
+  adminLocked: zod.boolean().optional(),
+  status: zod.enum(["open", "claimed", "completed"]).optional(),
+  claimedByCrewId: zod.number().nullish(),
+});
+
+export const UpdateSideQuestResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  priority: zod.enum(["low", "medium", "high", "urgent"]),
+  status: zod.enum(["open", "claimed", "completed"]),
+  adminLocked: zod.boolean(),
+  claimedByCrewId: zod.number().nullish(),
+  claimedAt: zod.coerce.date().nullish(),
+  completedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  claimedBy: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      role: zod.string(),
+      phone: zod.string().nullish(),
+      email: zod.string().nullish(),
+      avatarUrl: zod.string().nullish(),
+      createdAt: zod.coerce.date(),
+    })
+    .nullish(),
+});
+
+/**
+ * @summary Delete a side quest
+ */
+export const DeleteSideQuestParams = zod.object({
+  id: zod.coerce.number(),
+});

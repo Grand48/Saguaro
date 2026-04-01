@@ -479,6 +479,84 @@ export interface UpdateEquipmentInput {
   status?: UpdateEquipmentInputStatus;
 }
 
+export type SideQuestPriority =
+  (typeof SideQuestPriority)[keyof typeof SideQuestPriority];
+
+export const SideQuestPriority = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+  urgent: "urgent",
+} as const;
+
+export type SideQuestStatus =
+  (typeof SideQuestStatus)[keyof typeof SideQuestStatus];
+
+export const SideQuestStatus = {
+  open: "open",
+  claimed: "claimed",
+  completed: "completed",
+} as const;
+
+export interface SideQuest {
+  id: number;
+  title: string;
+  description?: string | null;
+  priority: SideQuestPriority;
+  status: SideQuestStatus;
+  adminLocked: boolean;
+  claimedByCrewId?: number | null;
+  claimedAt?: string | null;
+  completedAt?: string | null;
+  createdAt: string;
+  claimedBy?: CrewMember | null;
+}
+
+export type CreateSideQuestInputPriority =
+  (typeof CreateSideQuestInputPriority)[keyof typeof CreateSideQuestInputPriority];
+
+export const CreateSideQuestInputPriority = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+  urgent: "urgent",
+} as const;
+
+export interface CreateSideQuestInput {
+  title: string;
+  description?: string;
+  priority?: CreateSideQuestInputPriority;
+  adminLocked?: boolean;
+}
+
+export type UpdateSideQuestInputPriority =
+  (typeof UpdateSideQuestInputPriority)[keyof typeof UpdateSideQuestInputPriority];
+
+export const UpdateSideQuestInputPriority = {
+  low: "low",
+  medium: "medium",
+  high: "high",
+  urgent: "urgent",
+} as const;
+
+export type UpdateSideQuestInputStatus =
+  (typeof UpdateSideQuestInputStatus)[keyof typeof UpdateSideQuestInputStatus];
+
+export const UpdateSideQuestInputStatus = {
+  open: "open",
+  claimed: "claimed",
+  completed: "completed",
+} as const;
+
+export interface UpdateSideQuestInput {
+  title?: string;
+  description?: string | null;
+  priority?: UpdateSideQuestInputPriority;
+  adminLocked?: boolean;
+  status?: UpdateSideQuestInputStatus;
+  claimedByCrewId?: number | null;
+}
+
 export interface DashboardSummary {
   totalJobs: number;
   activeJobs: number;

@@ -13,6 +13,7 @@ import crewDocumentsRouter from "./crew-documents";
 import notificationsRouter from "./notifications";
 import timeEntriesRouter from "./time-entries";
 import jobContactsRouter from "./job-contacts";
+import sideQuestsRouter from "./side-quests";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(messagesRouter);
 router.use(photosRouter);
 router.use(equipmentRouter);
 router.use(dashboardRouter);
+router.use(sideQuestsRouter);
 
 export default router;

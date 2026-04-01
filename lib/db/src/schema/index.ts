@@ -10,3 +10,4 @@ export * from "./time-off";
 export * from "./notifications";
 export * from "./time-entries";
 export * from "./job-contacts";
+export * from "./side-quests";

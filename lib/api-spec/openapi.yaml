@@ -33,6 +33,8 @@ tags:
     description: Universal crew notifications
   - name: time-off
     description: Time-off request operations
+  - name: side-quests
+    description: Optional unscheduled tasks that crew can claim when unlocked by admin
   - name: dashboard
     description: Dashboard summary operations
 paths:
@@ -1208,6 +1210,76 @@ paths:
                 items:
                   $ref: "#/components/schemas/Job"
 
+  /side-quests:
+    get:
+      operationId: listSideQuests
+      tags: [side-quests]
+      summary: List all side quests
+      responses:
+        "200":
+          description: List of side quests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SideQuest"
+    post:
+      operationId: createSideQuest
+      tags: [side-quests]
+      summary: Create a new side quest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSideQuestInput"
+      responses:
+        "201":
+          description: Created side quest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SideQuest"
+
+  /side-quests/{id}:
+    patch:
+      operationId: updateSideQuest
+      tags: [side-quests]
+      summary: Update a side quest (lock/unlock, claim, complete)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSideQuestInput"
+      responses:
+        "200":
+          description: Updated side quest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SideQuest"
+    delete:
+      operationId: deleteSideQuest
+      tags: [side-quests]
+      summary: Delete a side quest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
     JobContact:
@@ -2025,6 +2097,87 @@ components:
         status:
           type: string
           enum: [needed, reserved, on_site, returned]
+
+    SideQuest:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        status:
+          type: string
+          enum: [open, claimed, completed]
+        adminLocked:
+          type: boolean
+        claimedByCrewId:
+          type: integer
+          nullable: true
+        claimedAt:
+          type: string
+          format: date-time
+          nullable: true
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        claimedBy:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/CrewMember"
+      required:
+        - id
+        - title
+        - priority
+        - status
+        - adminLocked
+        - createdAt
+
+    CreateSideQuestInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+          default: medium
+        adminLocked:
+          type: boolean
+          default: true
+      required:
+        - title
+
+    UpdateSideQuestInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+        adminLocked:
+          type: boolean
+        status:
+          type: string
+          enum: [open, claimed, completed]
+        claimedByCrewId:
+          type: integer
+          nullable: true
 
     DashboardSummary:
       type: object
