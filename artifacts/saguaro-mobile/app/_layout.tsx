@@ -34,6 +34,7 @@ function RootLayoutNav() {
       <Stack.Screen name="notifications" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="time-off" options={{ headerShown: false, presentation: "card" }} />
       <Stack.Screen name="locations" options={{ headerShown: false, presentation: "card" }} />
+      <Stack.Screen name="select-crew" options={{ headerShown: false, presentation: "card" }} />
     </Stack>
   );
 }

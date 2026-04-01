@@ -128,3 +128,16 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+
+## Pending: RevenueCat Subscription Integration
+
+The user wants subscription-based pricing ($19.99/month, $149.99/year) for the Saguaro Mobile app.
+
+**To implement:**
+1. Connect the RevenueCat integration in Replit (connector ID: `connector:ccfg_revenuecat_01KED80FZSMH99H5FHQWSX7D4M`) — user needs to click Connect and authorize via OAuth
+2. After connecting, run `addIntegration` then get the `revenueCatClient.ts` code snippet
+3. Run the seed script at `lib/scripts/src/seedRevenueCat.ts` to create the RevenueCat project, products, entitlements, and offerings
+4. Set env vars: `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`, `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`, `REVENUECAT_PROJECT_ID`
+5. Create `artifacts/saguaro-mobile/lib/revenuecat.tsx` with SubscriptionProvider + useSubscription hook
+6. Add paywall screen at `artifacts/saguaro-mobile/app/paywall.tsx`
+7. Wrap root layout in SubscriptionProvider and gate app features behind subscription check
