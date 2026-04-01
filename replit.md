@@ -26,6 +26,9 @@ Full-stack field operations management app. Workers can book/schedule jobs, assi
 - `/jobs/:id` — Job detail with 6 tabs: Overview, Crew, Tasks, Equipment, Chat, Photos
 - `/crew` — Crew member cards with avatar/role/contact
 - `/crew/:id` — Crew member detail
+- `/locations` — Job site locations with address, contact, access notes, and linked jobs
+- `/locations/:id` — Location detail page with full info and linked job list
+- `/time-off` — Time-off requests: crew members submit requests (3 tabs: Request / My Requests / All Requests). Foreman can approve or deny from "All Requests" tab with optional admin notes.
 
 ### Sample Data Seeded
 - 5 crew members: Marcus Johnson (Foreman), Darius Webb (Electrician), Tamara Reyes (Plumber), Ray Okafor (Laborer), Sandra Kim (Supervisor)

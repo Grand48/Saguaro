@@ -23,6 +23,7 @@ import type {
   CreateJobInput,
   CreateLocationInput,
   CreateTaskInput,
+  CreateTimeOffInput,
   CrewMember,
   DashboardSummary,
   Equipment,
@@ -37,8 +38,11 @@ import type {
   Photo,
   SendMessageInput,
   Task,
+  TimeOffRequest,
+  TimeOffRequestWithCrew,
   UpdateEquipmentInput,
   UpdateTaskInput,
+  UpdateTimeOffInput,
   UploadPhotoInput,
 } from "./api.schemas";
 
@@ -2816,6 +2820,425 @@ export const useDeleteEquipment = <
   TContext
 > => {
   return useMutation(getDeleteEquipmentMutationOptions(options));
+};
+
+/**
+ * @summary List all time-off requests with crew info
+ */
+export const getListTimeOffRequestsUrl = () => {
+  return `/api/time-off`;
+};
+
+export const listTimeOffRequests = async (
+  options?: RequestInit,
+): Promise<TimeOffRequestWithCrew[]> => {
+  return customFetch<TimeOffRequestWithCrew[]>(getListTimeOffRequestsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListTimeOffRequestsQueryKey = () => {
+  return [`/api/time-off`] as const;
+};
+
+export const getListTimeOffRequestsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listTimeOffRequests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listTimeOffRequests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListTimeOffRequestsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listTimeOffRequests>>
+  > = ({ signal }) => listTimeOffRequests({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listTimeOffRequests>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListTimeOffRequestsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listTimeOffRequests>>
+>;
+export type ListTimeOffRequestsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all time-off requests with crew info
+ */
+
+export function useListTimeOffRequests<
+  TData = Awaited<ReturnType<typeof listTimeOffRequests>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listTimeOffRequests>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListTimeOffRequestsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Submit a time-off request
+ */
+export const getCreateTimeOffRequestUrl = () => {
+  return `/api/time-off`;
+};
+
+export const createTimeOffRequest = async (
+  createTimeOffInput: CreateTimeOffInput,
+  options?: RequestInit,
+): Promise<TimeOffRequest> => {
+  return customFetch<TimeOffRequest>(getCreateTimeOffRequestUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createTimeOffInput),
+  });
+};
+
+export const getCreateTimeOffRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTimeOffRequest>>,
+    TError,
+    { data: BodyType<CreateTimeOffInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createTimeOffRequest>>,
+  TError,
+  { data: BodyType<CreateTimeOffInput> },
+  TContext
+> => {
+  const mutationKey = ["createTimeOffRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createTimeOffRequest>>,
+    { data: BodyType<CreateTimeOffInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createTimeOffRequest(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateTimeOffRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createTimeOffRequest>>
+>;
+export type CreateTimeOffRequestMutationBody = BodyType<CreateTimeOffInput>;
+export type CreateTimeOffRequestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit a time-off request
+ */
+export const useCreateTimeOffRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createTimeOffRequest>>,
+    TError,
+    { data: BodyType<CreateTimeOffInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createTimeOffRequest>>,
+  TError,
+  { data: BodyType<CreateTimeOffInput> },
+  TContext
+> => {
+  return useMutation(getCreateTimeOffRequestMutationOptions(options));
+};
+
+/**
+ * @summary List time-off requests for a specific crew member
+ */
+export const getListCrewTimeOffUrl = (crewId: number) => {
+  return `/api/time-off/crew/${crewId}`;
+};
+
+export const listCrewTimeOff = async (
+  crewId: number,
+  options?: RequestInit,
+): Promise<TimeOffRequestWithCrew[]> => {
+  return customFetch<TimeOffRequestWithCrew[]>(getListCrewTimeOffUrl(crewId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListCrewTimeOffQueryKey = (crewId: number) => {
+  return [`/api/time-off/crew/${crewId}`] as const;
+};
+
+export const getListCrewTimeOffQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCrewTimeOff>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCrewTimeOff>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListCrewTimeOffQueryKey(crewId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listCrewTimeOff>>> = ({
+    signal,
+  }) => listCrewTimeOff(crewId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!crewId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCrewTimeOff>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCrewTimeOffQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCrewTimeOff>>
+>;
+export type ListCrewTimeOffQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List time-off requests for a specific crew member
+ */
+
+export function useListCrewTimeOff<
+  TData = Awaited<ReturnType<typeof listCrewTimeOff>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCrewTimeOff>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCrewTimeOffQueryOptions(crewId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update a time-off request (approve/deny or edit)
+ */
+export const getUpdateTimeOffRequestUrl = (id: number) => {
+  return `/api/time-off/${id}`;
+};
+
+export const updateTimeOffRequest = async (
+  id: number,
+  updateTimeOffInput: UpdateTimeOffInput,
+  options?: RequestInit,
+): Promise<TimeOffRequest> => {
+  return customFetch<TimeOffRequest>(getUpdateTimeOffRequestUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateTimeOffInput),
+  });
+};
+
+export const getUpdateTimeOffRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTimeOffRequest>>,
+    TError,
+    { id: number; data: BodyType<UpdateTimeOffInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateTimeOffRequest>>,
+  TError,
+  { id: number; data: BodyType<UpdateTimeOffInput> },
+  TContext
+> => {
+  const mutationKey = ["updateTimeOffRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateTimeOffRequest>>,
+    { id: number; data: BodyType<UpdateTimeOffInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateTimeOffRequest(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateTimeOffRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateTimeOffRequest>>
+>;
+export type UpdateTimeOffRequestMutationBody = BodyType<UpdateTimeOffInput>;
+export type UpdateTimeOffRequestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a time-off request (approve/deny or edit)
+ */
+export const useUpdateTimeOffRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateTimeOffRequest>>,
+    TError,
+    { id: number; data: BodyType<UpdateTimeOffInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateTimeOffRequest>>,
+  TError,
+  { id: number; data: BodyType<UpdateTimeOffInput> },
+  TContext
+> => {
+  return useMutation(getUpdateTimeOffRequestMutationOptions(options));
+};
+
+/**
+ * @summary Delete a time-off request
+ */
+export const getDeleteTimeOffRequestUrl = (id: number) => {
+  return `/api/time-off/${id}`;
+};
+
+export const deleteTimeOffRequest = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteTimeOffRequestUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteTimeOffRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTimeOffRequest>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteTimeOffRequest>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteTimeOffRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteTimeOffRequest>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteTimeOffRequest(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteTimeOffRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteTimeOffRequest>>
+>;
+
+export type DeleteTimeOffRequestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a time-off request
+ */
+export const useDeleteTimeOffRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTimeOffRequest>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteTimeOffRequest>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteTimeOffRequestMutationOptions(options));
 };
 
 /**

@@ -618,6 +618,115 @@ export const DeleteEquipmentParams = zod.object({
 });
 
 /**
+ * @summary List all time-off requests with crew info
+ */
+export const ListTimeOffRequestsResponseItem = zod
+  .object({
+    id: zod.number(),
+    crewId: zod.number(),
+    startDate: zod.coerce.date(),
+    endDate: zod.coerce.date(),
+    reason: zod.string(),
+    status: zod.enum(["pending", "approved", "denied"]),
+    adminNotes: zod.string().nullish(),
+    createdAt: zod.coerce.date(),
+  })
+  .and(
+    zod.object({
+      crew: zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        role: zod.string(),
+        phone: zod.string().nullish(),
+        email: zod.string().nullish(),
+        avatarUrl: zod.string().nullish(),
+        createdAt: zod.coerce.date(),
+      }),
+    }),
+  );
+export const ListTimeOffRequestsResponse = zod.array(
+  ListTimeOffRequestsResponseItem,
+);
+
+/**
+ * @summary Submit a time-off request
+ */
+export const CreateTimeOffRequestBody = zod.object({
+  crewId: zod.number(),
+  startDate: zod.coerce.date(),
+  endDate: zod.coerce.date(),
+  reason: zod.string(),
+  status: zod.enum(["pending", "approved", "denied"]).optional(),
+  adminNotes: zod.string().nullish(),
+});
+
+/**
+ * @summary List time-off requests for a specific crew member
+ */
+export const ListCrewTimeOffParams = zod.object({
+  crewId: zod.coerce.number(),
+});
+
+export const ListCrewTimeOffResponseItem = zod
+  .object({
+    id: zod.number(),
+    crewId: zod.number(),
+    startDate: zod.coerce.date(),
+    endDate: zod.coerce.date(),
+    reason: zod.string(),
+    status: zod.enum(["pending", "approved", "denied"]),
+    adminNotes: zod.string().nullish(),
+    createdAt: zod.coerce.date(),
+  })
+  .and(
+    zod.object({
+      crew: zod.object({
+        id: zod.number(),
+        name: zod.string(),
+        role: zod.string(),
+        phone: zod.string().nullish(),
+        email: zod.string().nullish(),
+        avatarUrl: zod.string().nullish(),
+        createdAt: zod.coerce.date(),
+      }),
+    }),
+  );
+export const ListCrewTimeOffResponse = zod.array(ListCrewTimeOffResponseItem);
+
+/**
+ * @summary Update a time-off request (approve/deny or edit)
+ */
+export const UpdateTimeOffRequestParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateTimeOffRequestBody = zod.object({
+  status: zod.enum(["pending", "approved", "denied"]).optional(),
+  adminNotes: zod.string().nullish(),
+  reason: zod.string().optional(),
+  startDate: zod.coerce.date().optional(),
+  endDate: zod.coerce.date().optional(),
+});
+
+export const UpdateTimeOffRequestResponse = zod.object({
+  id: zod.number(),
+  crewId: zod.number(),
+  startDate: zod.coerce.date(),
+  endDate: zod.coerce.date(),
+  reason: zod.string(),
+  status: zod.enum(["pending", "approved", "denied"]),
+  adminNotes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a time-off request
+ */
+export const DeleteTimeOffRequestParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary Get dashboard summary stats
  */
 export const GetDashboardSummaryResponse = zod.object({

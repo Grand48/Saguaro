@@ -11,6 +11,7 @@ import CrewList from "./pages/crew/index";
 import CrewDetail from "./pages/crew/[id]";
 import LocationsList from "./pages/locations/index";
 import LocationDetail from "./pages/locations/[id]";
+import TimeOff from "./pages/time-off/index";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ function Router() {
         <Route path="/crew/:id" component={CrewDetail} />
         <Route path="/locations" component={LocationsList} />
         <Route path="/locations/:id" component={LocationDetail} />
+        <Route path="/time-off" component={TimeOff} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

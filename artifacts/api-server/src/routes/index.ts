@@ -8,12 +8,14 @@ import photosRouter from "./photos";
 import equipmentRouter from "./equipment";
 import dashboardRouter from "./dashboard";
 import locationsRouter from "./locations";
+import timeOffRouter from "./time-off";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(crewRouter);
 router.use(locationsRouter);
+router.use(timeOffRouter);
 router.use(jobsRouter);
 router.use(tasksRouter);
 router.use(messagesRouter);

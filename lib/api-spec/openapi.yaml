@@ -23,6 +23,8 @@ tags:
     description: Photo sharing operations
   - name: equipment
     description: Job equipment requirement operations
+  - name: time-off
+    description: Time-off request operations
   - name: dashboard
     description: Dashboard summary operations
 paths:
@@ -673,6 +675,98 @@ paths:
         "204":
           description: Deleted
 
+  # ─── TIME OFF ────────────────────────────────────────────────────────────────
+  /time-off:
+    get:
+      operationId: listTimeOffRequests
+      tags: [time-off]
+      summary: List all time-off requests with crew info
+      responses:
+        "200":
+          description: List of time-off requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeOffRequestWithCrew"
+    post:
+      operationId: createTimeOffRequest
+      tags: [time-off]
+      summary: Submit a time-off request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTimeOffInput"
+      responses:
+        "201":
+          description: Created request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeOffRequest"
+
+  /time-off/crew/{crewId}:
+    get:
+      operationId: listCrewTimeOff
+      tags: [time-off]
+      summary: List time-off requests for a specific crew member
+      parameters:
+        - name: crewId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of time-off requests for that crew member
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeOffRequestWithCrew"
+
+  /time-off/{id}:
+    put:
+      operationId: updateTimeOffRequest
+      tags: [time-off]
+      summary: Update a time-off request (approve/deny or edit)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTimeOffInput"
+      responses:
+        "200":
+          description: Updated request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeOffRequest"
+    delete:
+      operationId: deleteTimeOffRequest
+      tags: [time-off]
+      summary: Delete a time-off request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   # ─── DASHBOARD ───────────────────────────────────────────────────────────────
   /dashboard/summary:
     get:
@@ -704,6 +798,91 @@ paths:
 
 components:
   schemas:
+    TimeOffRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        crewId:
+          type: integer
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, denied]
+        adminNotes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - crewId
+        - startDate
+        - endDate
+        - reason
+        - status
+        - createdAt
+
+    TimeOffRequestWithCrew:
+      allOf:
+        - $ref: "#/components/schemas/TimeOffRequest"
+        - type: object
+          properties:
+            crew:
+              $ref: "#/components/schemas/CrewMember"
+          required: [crew]
+
+    CreateTimeOffInput:
+      type: object
+      properties:
+        crewId:
+          type: integer
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, denied]
+        adminNotes:
+          type: string
+          nullable: true
+      required:
+        - crewId
+        - startDate
+        - endDate
+        - reason
+
+    UpdateTimeOffInput:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [pending, approved, denied]
+        adminNotes:
+          type: string
+          nullable: true
+        reason:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+
     HealthStatus:
       type: object
       properties:

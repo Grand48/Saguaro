@@ -5,12 +5,24 @@
  * Crew Scheduler API
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
+export type TimeOffRequestStatus =
+  (typeof TimeOffRequestStatus)[keyof typeof TimeOffRequestStatus];
 
-export interface ErrorResponse {
-  error: string;
+export const TimeOffRequestStatus = {
+  pending: "pending",
+  approved: "approved",
+  denied: "denied",
+} as const;
+
+export interface TimeOffRequest {
+  id: number;
+  crewId: number;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: TimeOffRequestStatus;
+  adminNotes?: string | null;
+  createdAt: string;
 }
 
 export interface CrewMember {
@@ -21,6 +33,53 @@ export interface CrewMember {
   email?: string | null;
   avatarUrl?: string | null;
   createdAt: string;
+}
+
+export type TimeOffRequestWithCrew = TimeOffRequest & {
+  crew: CrewMember;
+};
+
+export type CreateTimeOffInputStatus =
+  (typeof CreateTimeOffInputStatus)[keyof typeof CreateTimeOffInputStatus];
+
+export const CreateTimeOffInputStatus = {
+  pending: "pending",
+  approved: "approved",
+  denied: "denied",
+} as const;
+
+export interface CreateTimeOffInput {
+  crewId: number;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status?: CreateTimeOffInputStatus;
+  adminNotes?: string | null;
+}
+
+export type UpdateTimeOffInputStatus =
+  (typeof UpdateTimeOffInputStatus)[keyof typeof UpdateTimeOffInputStatus];
+
+export const UpdateTimeOffInputStatus = {
+  pending: "pending",
+  approved: "approved",
+  denied: "denied",
+} as const;
+
+export interface UpdateTimeOffInput {
+  status?: UpdateTimeOffInputStatus;
+  adminNotes?: string | null;
+  reason?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface HealthStatus {
+  status: string;
+}
+
+export interface ErrorResponse {
+  error: string;
 }
 
 export interface CreateCrewMemberInput {
