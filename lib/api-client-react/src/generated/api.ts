@@ -22,6 +22,7 @@ import type {
   ClockOutInput,
   CreateCrewMemberInput,
   CreateEquipmentInput,
+  CreateJobContactInput,
   CreateJobInput,
   CreateLocationInput,
   CreateNotificationInput,
@@ -35,6 +36,7 @@ import type {
   GetCrewUnreadCount200,
   HealthStatus,
   Job,
+  JobContact,
   JobDetail,
   Location,
   LocationDetail,
@@ -51,6 +53,7 @@ import type {
   TimeOffRequest,
   TimeOffRequestWithCrew,
   UpdateEquipmentInput,
+  UpdateJobContactInput,
   UpdateTaskInput,
   UpdateTimeOffInput,
   UploadCrewDocumentInput,
@@ -2831,6 +2834,351 @@ export const useDeleteEquipment = <
   TContext
 > => {
   return useMutation(getDeleteEquipmentMutationOptions(options));
+};
+
+/**
+ * @summary List contacts for a job
+ */
+export const getListJobContactsUrl = (jobId: number) => {
+  return `/api/jobs/${jobId}/contacts`;
+};
+
+export const listJobContacts = async (
+  jobId: number,
+  options?: RequestInit,
+): Promise<JobContact[]> => {
+  return customFetch<JobContact[]>(getListJobContactsUrl(jobId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListJobContactsQueryKey = (jobId: number) => {
+  return [`/api/jobs/${jobId}/contacts`] as const;
+};
+
+export const getListJobContactsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listJobContacts>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listJobContacts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListJobContactsQueryKey(jobId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listJobContacts>>> = ({
+    signal,
+  }) => listJobContacts(jobId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!jobId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listJobContacts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListJobContactsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listJobContacts>>
+>;
+export type ListJobContactsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List contacts for a job
+ */
+
+export function useListJobContacts<
+  TData = Awaited<ReturnType<typeof listJobContacts>>,
+  TError = ErrorType<unknown>,
+>(
+  jobId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listJobContacts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListJobContactsQueryOptions(jobId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Add a contact to a job
+ */
+export const getCreateJobContactUrl = (jobId: number) => {
+  return `/api/jobs/${jobId}/contacts`;
+};
+
+export const createJobContact = async (
+  jobId: number,
+  createJobContactInput: CreateJobContactInput,
+  options?: RequestInit,
+): Promise<JobContact> => {
+  return customFetch<JobContact>(getCreateJobContactUrl(jobId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createJobContactInput),
+  });
+};
+
+export const getCreateJobContactMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createJobContact>>,
+    TError,
+    { jobId: number; data: BodyType<CreateJobContactInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createJobContact>>,
+  TError,
+  { jobId: number; data: BodyType<CreateJobContactInput> },
+  TContext
+> => {
+  const mutationKey = ["createJobContact"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createJobContact>>,
+    { jobId: number; data: BodyType<CreateJobContactInput> }
+  > = (props) => {
+    const { jobId, data } = props ?? {};
+
+    return createJobContact(jobId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateJobContactMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createJobContact>>
+>;
+export type CreateJobContactMutationBody = BodyType<CreateJobContactInput>;
+export type CreateJobContactMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Add a contact to a job
+ */
+export const useCreateJobContact = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createJobContact>>,
+    TError,
+    { jobId: number; data: BodyType<CreateJobContactInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createJobContact>>,
+  TError,
+  { jobId: number; data: BodyType<CreateJobContactInput> },
+  TContext
+> => {
+  return useMutation(getCreateJobContactMutationOptions(options));
+};
+
+/**
+ * @summary Update a job contact
+ */
+export const getUpdateJobContactUrl = (id: number) => {
+  return `/api/job-contacts/${id}`;
+};
+
+export const updateJobContact = async (
+  id: number,
+  updateJobContactInput: UpdateJobContactInput,
+  options?: RequestInit,
+): Promise<JobContact> => {
+  return customFetch<JobContact>(getUpdateJobContactUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateJobContactInput),
+  });
+};
+
+export const getUpdateJobContactMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateJobContact>>,
+    TError,
+    { id: number; data: BodyType<UpdateJobContactInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateJobContact>>,
+  TError,
+  { id: number; data: BodyType<UpdateJobContactInput> },
+  TContext
+> => {
+  const mutationKey = ["updateJobContact"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateJobContact>>,
+    { id: number; data: BodyType<UpdateJobContactInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateJobContact(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateJobContactMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateJobContact>>
+>;
+export type UpdateJobContactMutationBody = BodyType<UpdateJobContactInput>;
+export type UpdateJobContactMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a job contact
+ */
+export const useUpdateJobContact = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateJobContact>>,
+    TError,
+    { id: number; data: BodyType<UpdateJobContactInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateJobContact>>,
+  TError,
+  { id: number; data: BodyType<UpdateJobContactInput> },
+  TContext
+> => {
+  return useMutation(getUpdateJobContactMutationOptions(options));
+};
+
+/**
+ * @summary Delete a job contact
+ */
+export const getDeleteJobContactUrl = (id: number) => {
+  return `/api/job-contacts/${id}`;
+};
+
+export const deleteJobContact = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteJobContactUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteJobContactMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteJobContact>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteJobContact>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteJobContact"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteJobContact>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteJobContact(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteJobContactMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteJobContact>>
+>;
+
+export type DeleteJobContactMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a job contact
+ */
+export const useDeleteJobContact = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteJobContact>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteJobContact>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteJobContactMutationOptions(options));
 };
 
 /**

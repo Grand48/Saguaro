@@ -12,12 +12,14 @@ import timeOffRouter from "./time-off";
 import crewDocumentsRouter from "./crew-documents";
 import notificationsRouter from "./notifications";
 import timeEntriesRouter from "./time-entries";
+import jobContactsRouter from "./job-contacts";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(notificationsRouter);
 router.use(timeEntriesRouter);
+router.use(jobContactsRouter);
 router.use(crewRouter);
 router.use(locationsRouter);
 router.use(timeOffRouter);

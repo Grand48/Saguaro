@@ -5,6 +5,33 @@
  * Crew Scheduler API
  * OpenAPI spec version: 0.1.0
  */
+export interface JobContact {
+  id: number;
+  jobId: number;
+  name: string;
+  role: string;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface CreateJobContactInput {
+  name: string;
+  role: string;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateJobContactInput {
+  name?: string;
+  role?: string;
+  phone?: string | null;
+  email?: string | null;
+  notes?: string | null;
+}
+
 export interface TimeEntry {
   id: number;
   crewId: number;

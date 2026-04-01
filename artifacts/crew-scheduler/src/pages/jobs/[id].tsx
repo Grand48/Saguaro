@@ -19,6 +19,10 @@ import {
   useCreateEquipment,
   useUpdateEquipment,
   useDeleteEquipment,
+  useListJobContacts, getListJobContactsQueryKey,
+  useCreateJobContact,
+  useUpdateJobContact,
+  useDeleteJobContact,
   useGetLocation, getGetLocationQueryKey,
   getGetUpcomingJobsQueryKey,
   getGetDashboardSummaryQueryKey
@@ -45,7 +49,7 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { 
   MapPin, Calendar as CalendarIcon, FileText, CheckSquare, 
-  MessageSquare, Camera, Users, Plus, Trash2, Send, Paperclip, X, Wrench, Package
+  MessageSquare, Camera, Users, Plus, Trash2, Send, Paperclip, X, Wrench, Package, Phone, Mail, Edit2
 } from "lucide-react";
 
 export default function JobDetail() {
@@ -106,11 +110,12 @@ export default function JobDetail() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid grid-cols-6 w-full h-auto p-1 bg-muted/50 rounded-md">
+        <TabsList className="grid grid-cols-7 w-full h-auto p-1 bg-muted/50 rounded-md">
           <TabsTrigger value="overview" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><FileText className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Overview</span></TabsTrigger>
           <TabsTrigger value="crew" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Users className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Crew</span></TabsTrigger>
           <TabsTrigger value="tasks" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><CheckSquare className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Tasks</span></TabsTrigger>
           <TabsTrigger value="equipment" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Wrench className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Equipment</span></TabsTrigger>
+          <TabsTrigger value="contacts" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Phone className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Contacts</span></TabsTrigger>
           <TabsTrigger value="chat" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><MessageSquare className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Chat</span></TabsTrigger>
           <TabsTrigger value="photos" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Camera className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Photos</span></TabsTrigger>
         </TabsList>
@@ -148,6 +153,10 @@ export default function JobDetail() {
 
           <TabsContent value="equipment" className="outline-none focus-visible:ring-0">
             <JobEquipmentTab jobId={jobId} />
+          </TabsContent>
+
+          <TabsContent value="contacts" className="outline-none focus-visible:ring-0">
+            <JobContactsTab jobId={jobId} />
           </TabsContent>
 
           <TabsContent value="chat" className="outline-none focus-visible:ring-0">
@@ -1150,5 +1159,273 @@ function AddEquipmentDialog({ jobId }: { jobId: number }) {
         </Form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ─── Job Contacts Tab ─────────────────────────────────────────────────────────
+
+const contactSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  role: z.string().min(1, "Role is required"),
+  phone: z.string().optional().or(z.literal("")),
+  email: z.string().email("Invalid email").optional().or(z.literal("")),
+  notes: z.string().optional().or(z.literal("")),
+});
+type ContactFormData = z.infer<typeof contactSchema>;
+
+function ContactDialog({
+  jobId,
+  contact,
+  trigger,
+}: {
+  jobId: number;
+  contact?: any;
+  trigger: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const createContact = useCreateJobContact();
+  const updateContact = useUpdateJobContact();
+
+  const form = useForm<ContactFormData>({
+    resolver: zodResolver(contactSchema),
+    defaultValues: {
+      name: contact?.name ?? "",
+      role: contact?.role ?? "",
+      phone: contact?.phone ?? "",
+      email: contact?.email ?? "",
+      notes: contact?.notes ?? "",
+    },
+  });
+
+  const handleOpen = (val: boolean) => {
+    if (val) {
+      form.reset({
+        name: contact?.name ?? "",
+        role: contact?.role ?? "",
+        phone: contact?.phone ?? "",
+        email: contact?.email ?? "",
+        notes: contact?.notes ?? "",
+      });
+    }
+    setOpen(val);
+  };
+
+  const onSubmit = (data: ContactFormData) => {
+    const payload = {
+      name: data.name,
+      role: data.role,
+      phone: data.phone || null,
+      email: data.email || null,
+      notes: data.notes || null,
+    };
+
+    if (contact) {
+      updateContact.mutate({ id: contact.id, data: payload }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListJobContactsQueryKey(jobId) });
+          toast({ title: "Contact updated" });
+          setOpen(false);
+        },
+        onError: () => toast({ title: "Error", description: "Failed to update contact.", variant: "destructive" }),
+      });
+    } else {
+      createContact.mutate({ jobId, data: payload }, {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: getListJobContactsQueryKey(jobId) });
+          toast({ title: "Contact added" });
+          setOpen(false);
+        },
+        onError: () => toast({ title: "Error", description: "Failed to add contact.", variant: "destructive" }),
+      });
+    }
+  };
+
+  const isPending = createContact.isPending || updateContact.isPending;
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{contact ? "Edit Contact" : "Add Contact"}</DialogTitle>
+          <DialogDescription>
+            {contact ? "Update the contact details." : "Add a point of contact for this job."}
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl><Input placeholder="Full name" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="role" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Role / Title</FormLabel>
+                <FormControl><Input placeholder="e.g. Site Manager, Client, Inspector" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="grid grid-cols-2 gap-3">
+              <FormField control={form.control} name="phone" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Phone <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                  <FormControl><Input placeholder="(555) 000-0000" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="email" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                  <FormControl><Input placeholder="name@example.com" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="notes" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                <FormControl><Textarea className="h-16 resize-none" placeholder="Any additional info about this contact" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="pt-2 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={isPending}>
+                {isPending ? (contact ? "Saving..." : "Adding...") : (contact ? "Save Changes" : "Add Contact")}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function JobContactsTab({ jobId }: { jobId: number }) {
+  const { data: contacts, isLoading } = useListJobContacts(jobId, {
+    query: { enabled: !!jobId, queryKey: getListJobContactsQueryKey(jobId) }
+  });
+  const queryClient = useQueryClient();
+  const deleteContact = useDeleteJobContact();
+  const { toast } = useToast();
+
+  const handleDelete = (id: number) => {
+    deleteContact.mutate({ id }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListJobContactsQueryKey(jobId) });
+        toast({ title: "Contact removed" });
+      },
+      onError: () => toast({ title: "Error", description: "Failed to remove contact.", variant: "destructive" }),
+    });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center bg-card p-4 rounded-lg border border-border shadow-sm">
+        <div>
+          <h3 className="font-semibold flex items-center gap-2">
+            <Phone className="h-4 w-4 text-primary" />
+            Job Contacts
+          </h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {contacts?.length ?? 0} contact{(contacts?.length ?? 0) !== 1 ? "s" : ""} — clients, inspectors, subcontractors
+          </p>
+        </div>
+        <ContactDialog
+          jobId={jobId}
+          trigger={
+            <Button size="sm" className="gap-1.5">
+              <Plus className="h-4 w-4" /> Add Contact
+            </Button>
+          }
+        />
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2].map(i => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
+        </div>
+      ) : !contacts || contacts.length === 0 ? (
+        <div className="p-16 text-center text-muted-foreground border border-dashed border-border rounded-lg bg-card/50">
+          <Phone className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="text-lg font-medium text-foreground mb-1">No contacts yet</p>
+          <p className="text-sm">Add clients, inspectors, or subcontractors for quick reference.</p>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {contacts.map((contact) => (
+            <Card key={contact.id} className="border-border shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-sm font-bold text-primary">
+                        {contact.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
+                      </span>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-sm leading-tight truncate">{contact.name}</p>
+                      <p className="text-xs text-primary font-medium mt-0.5">{contact.role}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <ContactDialog
+                      jobId={jobId}
+                      contact={contact}
+                      trigger={
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground">
+                          <Edit2 className="h-3.5 w-3.5" />
+                        </Button>
+                      }
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleDelete(contact.id)}
+                      disabled={deleteContact.isPending}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {(contact.phone || contact.email) && (
+                  <div className="mt-3 space-y-1.5 pl-[52px]">
+                    {contact.phone && (
+                      <a
+                        href={`tel:${contact.phone}`}
+                        className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+                      >
+                        <Phone className="h-3 w-3 text-primary shrink-0" />
+                        <span className="truncate group-hover:underline">{contact.phone}</span>
+                      </a>
+                    )}
+                    {contact.email && (
+                      <a
+                        href={`mailto:${contact.email}`}
+                        className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+                      >
+                        <Mail className="h-3 w-3 text-primary shrink-0" />
+                        <span className="truncate group-hover:underline">{contact.email}</span>
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {contact.notes && (
+                  <p className="mt-2 pl-[52px] text-xs text-muted-foreground line-clamp-2">{contact.notes}</p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

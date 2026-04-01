@@ -25,6 +25,8 @@ tags:
     description: Job equipment requirement operations
   - name: crew-documents
     description: Crew member training documents and certificates
+  - name: job-contacts
+    description: Contacts associated with a job
   - name: time-entries
     description: Employee clock-in/clock-out time tracking
   - name: notifications
@@ -681,6 +683,89 @@ paths:
         "204":
           description: Deleted
 
+  # ─── JOB CONTACTS ────────────────────────────────────────────────────────────
+  /jobs/{jobId}/contacts:
+    get:
+      operationId: listJobContacts
+      tags: [job-contacts]
+      summary: List contacts for a job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of contacts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobContact"
+    post:
+      operationId: createJobContact
+      tags: [job-contacts]
+      summary: Add a contact to a job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobContactInput"
+      responses:
+        "201":
+          description: Created contact
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobContact"
+
+  /job-contacts/{id}:
+    put:
+      operationId: updateJobContact
+      tags: [job-contacts]
+      summary: Update a job contact
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateJobContactInput"
+      responses:
+        "200":
+          description: Updated contact
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobContact"
+    delete:
+      operationId: deleteJobContact
+      tags: [job-contacts]
+      summary: Delete a job contact
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   # ─── TIME ENTRIES ────────────────────────────────────────────────────────────
   /time-entries:
     get:
@@ -1125,6 +1210,66 @@ paths:
 
 components:
   schemas:
+    JobContact:
+      type: object
+      properties:
+        id:
+          type: integer
+        jobId:
+          type: integer
+        name:
+          type: string
+        role:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, jobId, name, role, createdAt]
+
+    CreateJobContactInput:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required: [name, role]
+
+    UpdateJobContactInput:
+      type: object
+      properties:
+        name:
+          type: string
+        role:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
     TimeEntry:
       type: object
       properties:

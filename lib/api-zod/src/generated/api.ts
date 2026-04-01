@@ -618,6 +618,73 @@ export const DeleteEquipmentParams = zod.object({
 });
 
 /**
+ * @summary List contacts for a job
+ */
+export const ListJobContactsParams = zod.object({
+  jobId: zod.coerce.number(),
+});
+
+export const ListJobContactsResponseItem = zod.object({
+  id: zod.number(),
+  jobId: zod.number(),
+  name: zod.string(),
+  role: zod.string(),
+  phone: zod.string().nullish(),
+  email: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListJobContactsResponse = zod.array(ListJobContactsResponseItem);
+
+/**
+ * @summary Add a contact to a job
+ */
+export const CreateJobContactParams = zod.object({
+  jobId: zod.coerce.number(),
+});
+
+export const CreateJobContactBody = zod.object({
+  name: zod.string(),
+  role: zod.string(),
+  phone: zod.string().nullish(),
+  email: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Update a job contact
+ */
+export const UpdateJobContactParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateJobContactBody = zod.object({
+  name: zod.string().optional(),
+  role: zod.string().optional(),
+  phone: zod.string().nullish(),
+  email: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateJobContactResponse = zod.object({
+  id: zod.number(),
+  jobId: zod.number(),
+  name: zod.string(),
+  role: zod.string(),
+  phone: zod.string().nullish(),
+  email: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a job contact
+ */
+export const DeleteJobContactParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary List all time entries (admin view)
  */
 export const ListTimeEntriesResponseItem = zod.object({
