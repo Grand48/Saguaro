@@ -89,18 +89,18 @@
   --sidebar: 0 0% 100%;
   --sidebar-foreground: 222 47% 11%;
   --sidebar-border: 214 32% 91%;
-  --sidebar-primary: 24 98% 50%;
+  --sidebar-primary: 142 72% 36%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 214 32% 96%;
   --sidebar-accent-foreground: 222 47% 11%;
-  --sidebar-ring: 24 98% 50%;
+  --sidebar-ring: 142 72% 36%;
   
   --popover: 0 0% 100%;
   --popover-foreground: 222 47% 11%;
   --popover-border: 214 32% 91%;
   
-  /* Bold Orange/Caterpillar */
-  --primary: 24 98% 50%;
+  /* Forest Green */
+  --primary: 142 72% 36%;
   --primary-foreground: 0 0% 100%;
   
   --secondary: 210 40% 96%;
@@ -116,11 +116,11 @@
   --destructive-foreground: 0 0% 100%;
   
   --input: 214 32% 91%;
-  --ring: 24 98% 50%;
+  --ring: 142 72% 36%;
   
-  --chart-1: 24 98% 50%;
+  --chart-1: 142 72% 36%;
   --chart-2: 214 32% 91%;
-  --chart-3: 160 84% 39%;
+  --chart-3: 160 84% 55%;
   --chart-4: 210 40% 96%;
   --chart-5: 222 47% 11%;
 
@@ -169,17 +169,17 @@
   --sidebar: 222 47% 11%;
   --sidebar-foreground: 210 40% 98%;
   --sidebar-border: 217 32% 17%;
-  --sidebar-primary: 24 98% 50%;
+  --sidebar-primary: 142 72% 44%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 217 32% 17%;
   --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-ring: 24 98% 50%;
+  --sidebar-ring: 142 72% 44%;
   
   --popover: 222 47% 11%;
   --popover-foreground: 210 40% 98%;
   --popover-border: 217 32% 17%;
   
-  --primary: 24 98% 50%;
+  --primary: 142 72% 44%;
   --primary-foreground: 0 0% 100%;
   
   --secondary: 217 32% 17%;
@@ -195,11 +195,11 @@
   --destructive-foreground: 210 40% 98%;
   
   --input: 217 32% 17%;
-  --ring: 24 98% 50%;
+  --ring: 142 72% 44%;
   
-  --chart-1: 24 98% 50%;
+  --chart-1: 142 72% 44%;
   --chart-2: 214 32% 91%;
-  --chart-3: 160 84% 39%;
+  --chart-3: 160 84% 55%;
   --chart-4: 210 40% 96%;
   --chart-5: 222 47% 11%;
 }
