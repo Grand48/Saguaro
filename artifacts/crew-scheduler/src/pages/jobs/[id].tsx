@@ -1458,15 +1458,30 @@ const JOB_COMPLETION_FIELDS = [
   { key: "site_cleaned", label: "Site cleaned and secured?", type: "yesno" },
 ] as const;
 
-const QC_FIELDS = [
-  { key: "inspector_name", label: "Inspector name", type: "text" },
-  { key: "meets_specifications", label: "Work meets project specifications?", type: "yesno" },
-  { key: "safety_protocols", label: "All safety protocols followed?", type: "yesno" },
-  { key: "site_cleanliness", label: "Site cleanliness acceptable?", type: "yesno" },
-  { key: "deficiencies", label: "Deficiencies noted (leave blank if none)", type: "textarea" },
-  { key: "deficiencies_addressed", label: "All deficiencies have been addressed?", type: "yesno" },
-  { key: "photos_taken", label: "Photos taken of completed work?", type: "yesno" },
-] as const;
+const QC_CHECKLIST_ITEMS = [
+  { key: "chk_pre_job_photo", label: "Pre job photo" },
+  { key: "chk_splice_kit_material_photos", label: "Splice kit material photos" },
+  { key: "chk_center_line_photo", label: "Center line photo" },
+  { key: "chk_finger_cable_lap_lengths", label: "Finger / cable / lap lengths" },
+  { key: "chk_every_laying_step", label: "Every laying step of the splice" },
+  { key: "chk_temp_wires", label: "Temp wires" },
+  { key: "chk_edge_irons", label: "Edge irons" },
+  { key: "chk_vulcanizer_pressure", label: "Vulcanizer pressure" },
+  { key: "chk_vulcanizer_power", label: "Vulcanizer power" },
+  { key: "chk_finished_splice", label: "Finished splice" },
+  { key: "chk_durometer_readings", label: "Durometer readings" },
+  { key: "chk_work_area_after", label: "Work area after completed work" },
+];
+const TIME_INTERVALS = [0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
+const TIME_LOG_COLS = [
+  { key: "p1t", label: "Platen #1 Top" },
+  { key: "p1b", label: "Platen #1 Bottom" },
+  { key: "psi1", label: "PSI" },
+  { key: "p2t", label: "Platen #2 Top" },
+  { key: "p2b", label: "Platen #2 Bottom" },
+  { key: "psi2", label: "PSI" },
+];
+const QC_FIELDS: readonly { key: string; label: string; type: string }[] = [];
 
 type FormType = "job_completion" | "quality_control" | "custom";
 type JobFormRecord = {
@@ -1481,7 +1496,6 @@ function buildFormSummaryText(form: JobFormRecord, jobName: string): string {
   const typeLabel = form.formType === "job_completion" ? "Job Completion Form"
     : form.formType === "quality_control" ? "Quality Control Checklist"
     : form.customFormName ?? "Uploaded Form";
-  const fieldDefs = form.formType === "quality_control" ? QC_FIELDS : JOB_COMPLETION_FIELDS;
   const parsed = form.fields ? JSON.parse(form.fields) as Record<string, string> : {};
   const lines = [
     `${typeLabel.toUpperCase()}`,
@@ -1490,9 +1504,21 @@ function buildFormSummaryText(form: JobFormRecord, jobName: string): string {
     `Date: ${form.signedAt ? new Date(form.signedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : ""}`,
     "",
   ];
-  if (form.formType !== "custom") {
+  if (form.formType === "quality_control") {
+    lines.push("--- CHECKLIST ---");
+    for (const item of QC_CHECKLIST_ITEMS) {
+      lines.push(`${parsed[item.key] === "true" ? "[✓]" : "[ ]"} ${item.label}`);
+    }
+    lines.push("", "--- TEMPERATURE & PRESSURE LOG ---");
+    const header = ["Min", ...TIME_LOG_COLS.map((c) => c.label)].join(" | ");
+    lines.push(header);
+    for (const min of TIME_INTERVALS) {
+      const row = [String(min), ...TIME_LOG_COLS.map((c) => parsed[`tl_${min}_${c.key}`] ?? "")].join(" | ");
+      lines.push(row);
+    }
+  } else if (form.formType === "job_completion") {
     lines.push("--- Form Details ---");
-    for (const fd of fieldDefs) {
+    for (const fd of JOB_COMPLETION_FIELDS) {
       const val = parsed[fd.key as string];
       lines.push(`${fd.label}: ${val === "yes" ? "Yes ✓" : val === "no" ? "No ✗" : val || "—"}`);
     }
@@ -1558,7 +1584,6 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
   });
 
   const activeForm = (forms as JobFormRecord[]).find((f) => f.id === activeFormId);
-  const fields = activeForm?.formType === "quality_control" ? QC_FIELDS : JOB_COMPLETION_FIELDS;
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1639,10 +1664,78 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
               )}
             </CardContent>
           </Card>
+        ) : activeForm.formType === "quality_control" ? (
+          <div className="space-y-6">
+            {/* Checklist */}
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <ClipboardCheck className="h-4 w-4 text-primary" /> Photo &amp; Documentation Checklist
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-2">
+                {QC_CHECKLIST_ITEMS.map((item) => {
+                  const checked = formValues[item.key] === "true";
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => setFormValues((prev) => ({ ...prev, [item.key]: checked ? "false" : "true" }))}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left transition-colors ${checked ? "bg-green-50 border-green-300" : "border-border hover:bg-muted"}`}
+                    >
+                      <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${checked ? "bg-green-600 border-green-600" : "border-muted-foreground/40"}`}>
+                        {checked && <CheckCircle2 className="h-3.5 w-3.5 text-white" />}
+                      </div>
+                      <span className={`text-sm font-medium ${checked ? "text-green-800" : "text-foreground"}`}>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </CardContent>
+            </Card>
+            {/* Temperature & Pressure Log */}
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="text-sm font-semibold">Temperature &amp; Pressure Log</CardTitle>
+                <p className="text-xs text-muted-foreground mt-0.5">Record readings every 5 minutes</p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-muted/60">
+                        <th className="px-3 py-2 text-left font-semibold border-b border-r border-border sticky left-0 bg-muted/80 min-w-[52px]">Min</th>
+                        {TIME_LOG_COLS.map((col, i) => (
+                          <th key={col.key + i} className="px-2 py-2 text-center font-semibold border-b border-r border-border min-w-[90px] whitespace-pre-wrap leading-tight">
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {TIME_INTERVALS.map((min, ri) => (
+                        <tr key={min} className={ri % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                          <td className="px-3 py-1.5 font-medium border-r border-border sticky left-0 bg-inherit text-muted-foreground">{min}</td>
+                          {TIME_LOG_COLS.map((col, ci) => (
+                            <td key={col.key + ci} className="border-r border-border p-0.5">
+                              <input
+                                className="w-full px-2 py-1 text-xs text-center bg-transparent focus:outline-none focus:bg-primary/5 focus:ring-1 focus:ring-primary/30 rounded"
+                                placeholder="—"
+                                value={formValues[`tl_${min}_${col.key}`] ?? ""}
+                                onChange={(e) => setFormValues((prev) => ({ ...prev, [`tl_${min}_${col.key}`]: e.target.value }))}
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         ) : (
           <Card>
             <CardContent className="p-6 space-y-5">
-              {fields.map((field) => (
+              {JOB_COMPLETION_FIELDS.map((field) => (
                 <div key={field.key} className="space-y-1.5">
                   <label className="text-sm font-medium text-foreground">{field.label}</label>
                   {field.type === "yesno" ? (

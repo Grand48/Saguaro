@@ -45,21 +45,35 @@ const JOB_COMPLETION_FIELDS = [
   { key: "site_cleaned", label: "Site cleaned?", type: "yesno" },
 ] as const;
 
-const QC_FIELDS = [
-  { key: "inspector_name", label: "Inspector name", type: "text" },
-  { key: "meets_specifications", label: "Meets specs?", type: "yesno" },
-  { key: "safety_protocols", label: "Safety followed?", type: "yesno" },
-  { key: "site_cleanliness", label: "Site clean?", type: "yesno" },
-  { key: "deficiencies", label: "Deficiencies", type: "textarea" },
-  { key: "deficiencies_addressed", label: "Issues addressed?", type: "yesno" },
-  { key: "photos_taken", label: "Photos taken?", type: "yesno" },
-] as const;
+const QC_CHECKLIST_ITEMS = [
+  { key: "chk_pre_job_photo", label: "Pre job photo" },
+  { key: "chk_splice_kit_material_photos", label: "Splice kit material photos" },
+  { key: "chk_center_line_photo", label: "Center line photo" },
+  { key: "chk_finger_cable_lap_lengths", label: "Finger / cable / lap lengths" },
+  { key: "chk_every_laying_step", label: "Every laying step of the splice" },
+  { key: "chk_temp_wires", label: "Temp wires" },
+  { key: "chk_edge_irons", label: "Edge irons" },
+  { key: "chk_vulcanizer_pressure", label: "Vulcanizer pressure" },
+  { key: "chk_vulcanizer_power", label: "Vulcanizer power" },
+  { key: "chk_finished_splice", label: "Finished splice" },
+  { key: "chk_durometer_readings", label: "Durometer readings" },
+  { key: "chk_work_area_after", label: "Work area after completed work" },
+];
+const TIME_INTERVALS = [0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
+const TIME_LOG_COLS = [
+  { key: "p1t", label: "P1 Top" },
+  { key: "p1b", label: "P1 Bot" },
+  { key: "psi1", label: "PSI" },
+  { key: "p2t", label: "P2 Top" },
+  { key: "p2b", label: "P2 Bot" },
+  { key: "psi2", label: "PSI" },
+];
+const QC_FIELDS: readonly { key: string; label: string; type: string }[] = [];
 
 function buildMobileFormSummary(form: any, jobName: string): string {
   const typeLabel = form.formType === "job_completion" ? "Job Completion Form"
     : form.formType === "quality_control" ? "Quality Control Checklist"
     : form.customFormName ?? "Uploaded Form";
-  const fieldDefs = form.formType === "quality_control" ? QC_FIELDS : JOB_COMPLETION_FIELDS;
   const parsed = form.fields ? JSON.parse(form.fields) as Record<string, string> : {};
   const lines = [
     typeLabel.toUpperCase(),
@@ -68,9 +82,20 @@ function buildMobileFormSummary(form: any, jobName: string): string {
     `Date: ${form.signedAt ? new Date(form.signedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : ""}`,
     "",
   ];
-  if (form.formType !== "custom") {
+  if (form.formType === "quality_control") {
+    lines.push("--- CHECKLIST ---");
+    for (const item of QC_CHECKLIST_ITEMS) {
+      lines.push(`${parsed[item.key] === "true" ? "[✓]" : "[ ]"} ${item.label}`);
+    }
+    lines.push("", "--- TEMP & PRESSURE LOG ---");
+    lines.push("Min | P1 Top | P1 Bot | PSI | P2 Top | P2 Bot | PSI");
+    for (const min of TIME_INTERVALS) {
+      const row = [String(min), ...TIME_LOG_COLS.map((c) => parsed[`tl_${min}_${c.key}`] ?? "")].join(" | ");
+      lines.push(row);
+    }
+  } else if (form.formType === "job_completion") {
     lines.push("--- Form Details ---");
-    for (const fd of fieldDefs) {
+    for (const fd of JOB_COMPLETION_FIELDS) {
       const val = parsed[fd.key as string];
       lines.push(`${fd.label}: ${val === "yes" ? "Yes" : val === "no" ? "No" : val || "—"}`);
     }
@@ -169,7 +194,6 @@ export default function JobDetailScreen() {
   });
 
   const activeFormRecord = (forms as any[]).find((f) => f.id === activeFormId);
-  const activeFieldDefs = activeFormRecord?.formType === "quality_control" ? QC_FIELDS : JOB_COMPLETION_FIELDS;
 
   const handlePickImage = useCallback(async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -595,7 +619,86 @@ export default function JobDetailScreen() {
                 </View>
               ) : null}
 
-              {activeFormRecord.formType !== "custom" && activeFieldDefs.map((field) => (
+              {activeFormRecord.formType === "quality_control" && (
+                <>
+                  {/* Checklist */}
+                  <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginBottom: 10 }}>
+                      Photo &amp; Documentation Checklist
+                    </Text>
+                    {QC_CHECKLIST_ITEMS.map((item) => {
+                      const checked = formValues[item.key] === "true";
+                      return (
+                        <TouchableOpacity
+                          key={item.key}
+                          onPress={() => setFormValues((prev) => ({ ...prev, [item.key]: checked ? "false" : "true" }))}
+                          style={{
+                            flexDirection: "row", alignItems: "center", gap: 10,
+                            paddingVertical: 10, paddingHorizontal: 4,
+                            borderBottomWidth: 1, borderBottomColor: colors.border + "60",
+                          }}
+                        >
+                          <View style={{
+                            width: 22, height: 22, borderRadius: 6, borderWidth: 2,
+                            borderColor: checked ? "#16a34a" : colors.border,
+                            backgroundColor: checked ? "#16a34a" : "transparent",
+                            alignItems: "center", justifyContent: "center",
+                          }}>
+                            {checked && <Ionicons name="checkmark" size={14} color="#fff" />}
+                          </View>
+                          <Text style={{ flex: 1, fontSize: 13, fontFamily: "Inter_500Medium", color: checked ? "#16a34a" : colors.foreground }}>
+                            {item.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  {/* Time & Pressure Log */}
+                  <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border, padding: 0, overflow: "hidden" }]}>
+                    <View style={{ padding: 14, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                      <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground }}>Temperature &amp; Pressure Log</Text>
+                      <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 }}>Record readings every 5 minutes</Text>
+                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator>
+                      <View>
+                        {/* Header */}
+                        <View style={{ flexDirection: "row", backgroundColor: colors.muted + "80" }}>
+                          <View style={{ width: 44, padding: 8, borderRightWidth: 1, borderRightColor: colors.border, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                            <Text style={{ fontSize: 10, fontFamily: "Inter_600SemiBold", color: colors.foreground, textAlign: "center" }}>Min</Text>
+                          </View>
+                          {TIME_LOG_COLS.map((col, ci) => (
+                            <View key={col.key + ci} style={{ width: 72, padding: 8, borderRightWidth: 1, borderRightColor: colors.border, borderBottomWidth: 1, borderBottomColor: colors.border, alignItems: "center" }}>
+                              <Text style={{ fontSize: 10, fontFamily: "Inter_600SemiBold", color: colors.foreground, textAlign: "center" }}>{col.label}</Text>
+                            </View>
+                          ))}
+                        </View>
+                        {/* Rows */}
+                        {TIME_INTERVALS.map((min, ri) => (
+                          <View key={min} style={{ flexDirection: "row", backgroundColor: ri % 2 === 0 ? colors.background : colors.muted + "30" }}>
+                            <View style={{ width: 44, padding: 8, borderRightWidth: 1, borderRightColor: colors.border, borderBottomWidth: 1, borderBottomColor: colors.border, alignItems: "center", justifyContent: "center" }}>
+                              <Text style={{ fontSize: 11, fontFamily: "Inter_500Medium", color: colors.mutedForeground }}>{min}</Text>
+                            </View>
+                            {TIME_LOG_COLS.map((col, ci) => (
+                              <View key={col.key + ci} style={{ width: 72, borderRightWidth: 1, borderRightColor: colors.border, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                                <TextInput
+                                  style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: colors.foreground, textAlign: "center", paddingVertical: 6, paddingHorizontal: 4 }}
+                                  value={formValues[`tl_${min}_${col.key}`] ?? ""}
+                                  onChangeText={(v) => setFormValues((prev) => ({ ...prev, [`tl_${min}_${col.key}`]: v }))}
+                                  placeholder="—"
+                                  placeholderTextColor={colors.mutedForeground + "80"}
+                                  keyboardType="decimal-pad"
+                                />
+                              </View>
+                            ))}
+                          </View>
+                        ))}
+                      </View>
+                    </ScrollView>
+                  </View>
+                </>
+              )}
+
+              {activeFormRecord.formType === "job_completion" && JOB_COMPLETION_FIELDS.map((field) => (
                 <View key={field.key} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <Text style={{ fontSize: 13, fontFamily: "Inter_500Medium", color: colors.foreground, marginBottom: 8 }}>{field.label}</Text>
                   {field.type === "yesno" ? (
