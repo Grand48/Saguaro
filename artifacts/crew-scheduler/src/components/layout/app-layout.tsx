@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Hammer, Users, Calendar, MapPin, CalendarOff, Menu, Bell, Clock } from "lucide-react";
+import { Users, Calendar, MapPin, CalendarOff, Menu, Bell, Clock, Hammer } from "lucide-react";
+import { CactusHardHat } from "@/components/icons/CactusHardHat";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
@@ -79,7 +80,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <aside className="hidden md:flex flex-col w-64 border-r border-border bg-card">
         <div className="p-6 border-b border-border flex items-center gap-2">
           <div className="bg-primary p-2 rounded-md">
-            <Hammer className="h-5 w-5 text-primary-foreground" />
+            <CactusHardHat className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="font-bold tracking-tight">Saguaro</span>
         </div>
@@ -104,7 +105,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <header className="md:hidden flex items-center justify-between p-4 border-b border-border bg-card">
           <div className="flex items-center gap-2">
             <div className="bg-primary p-1.5 rounded-md">
-              <Hammer className="h-4 w-4 text-primary-foreground" />
+              <CactusHardHat className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="font-bold tracking-tight">Saguaro</span>
           </div>
@@ -117,7 +118,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
             <SheetContent side="left" className="p-0 w-64">
               <div className="p-6 border-b border-border flex items-center gap-2">
                 <div className="bg-primary p-2 rounded-md">
-                  <Hammer className="h-5 w-5 text-primary-foreground" />
+                  <CactusHardHat className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <span className="font-bold tracking-tight">Saguaro</span>
               </div>
