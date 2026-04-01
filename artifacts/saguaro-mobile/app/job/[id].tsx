@@ -2,7 +2,7 @@ import React, { useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Platform, Image, TextInput, KeyboardAvoidingView,
-  FlatList,
+  FlatList, Share,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -54,6 +54,32 @@ const QC_FIELDS = [
   { key: "deficiencies_addressed", label: "Issues addressed?", type: "yesno" },
   { key: "photos_taken", label: "Photos taken?", type: "yesno" },
 ] as const;
+
+function buildMobileFormSummary(form: any, jobName: string): string {
+  const typeLabel = form.formType === "job_completion" ? "Job Completion Form"
+    : form.formType === "quality_control" ? "Quality Control Checklist"
+    : form.customFormName ?? "Uploaded Form";
+  const fieldDefs = form.formType === "quality_control" ? QC_FIELDS : JOB_COMPLETION_FIELDS;
+  const parsed = form.fields ? JSON.parse(form.fields) as Record<string, string> : {};
+  const lines = [
+    typeLabel.toUpperCase(),
+    `Job: ${jobName}`,
+    `Signed by: ${form.signatureName}`,
+    `Date: ${form.signedAt ? new Date(form.signedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : ""}`,
+    "",
+  ];
+  if (form.formType !== "custom") {
+    lines.push("--- Form Details ---");
+    for (const fd of fieldDefs) {
+      const val = parsed[fd.key as string];
+      lines.push(`${fd.label}: ${val === "yes" ? "Yes" : val === "no" ? "No" : val || "—"}`);
+    }
+  } else {
+    lines.push(`Attached file: ${form.customFormName ?? "uploaded form"}`);
+  }
+  lines.push("", "Signed electronically via Saguaro.");
+  return lines.join("\n");
+}
 
 function InfoRow({ icon, label, value, colors }: { icon: any; label: string; value: string; colors: any }) {
   return (
@@ -511,6 +537,23 @@ export default function JobDetailScreen() {
                             onPress={() => { setActiveFormId(form.id); const p = form.fields ? JSON.parse(form.fields) : {}; setFormValues(p); setFormView("fill"); }}
                           >
                             <Text style={[s.formActionText, { color: "#fff" }]}>Fill & Sign</Text>
+                          </TouchableOpacity>
+                        )}
+                        {isSigned && (
+                          <TouchableOpacity
+                            style={[s.formAction, { backgroundColor: colors.muted, flexDirection: "row", alignItems: "center", gap: 4 }]}
+                            onPress={async () => {
+                              const typeLabel = form.formType === "job_completion" ? "Job Completion Form"
+                                : form.formType === "quality_control" ? "Quality Control Checklist"
+                                : form.customFormName ?? "Uploaded Form";
+                              await Share.share({
+                                title: `Signed: ${typeLabel}`,
+                                message: buildMobileFormSummary(form, (job as any)?.name ?? ""),
+                              });
+                            }}
+                          >
+                            <Ionicons name="share-outline" size={13} color={colors.mutedForeground} />
+                            <Text style={[s.formActionText, { color: colors.mutedForeground }]}>Share</Text>
                           </TouchableOpacity>
                         )}
                         <TouchableOpacity

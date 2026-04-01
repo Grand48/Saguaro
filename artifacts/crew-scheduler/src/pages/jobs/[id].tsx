@@ -52,7 +52,7 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   MapPin, Calendar as CalendarIcon, FileText, CheckSquare, 
   MessageSquare, Camera, Users, Plus, Trash2, Send, Paperclip, X, Wrench, Package, Phone, Mail, Edit2,
-  PenLine, ClipboardCheck, CheckCircle2, Circle, ChevronDown, ChevronRight
+  PenLine, ClipboardCheck, CheckCircle2, Circle, ChevronDown, ChevronRight, Copy, Upload
 } from "lucide-react";
 import {
   useListJobForms,
@@ -179,7 +179,7 @@ export default function JobDetail() {
           </TabsContent>
 
           <TabsContent value="forms" className="outline-none focus-visible:ring-0">
-            <JobFormsTab jobId={jobId} />
+            <JobFormsTab jobId={jobId} jobName={job?.name ?? ""} />
           </TabsContent>
         </div>
       </Tabs>
@@ -1477,7 +1477,42 @@ type JobFormRecord = {
   signedByCrew?: { id: number; name: string } | null;
 };
 
-function JobFormsTab({ jobId }: { jobId: number }) {
+function buildFormSummaryText(form: JobFormRecord, jobName: string): string {
+  const typeLabel = form.formType === "job_completion" ? "Job Completion Form"
+    : form.formType === "quality_control" ? "Quality Control Checklist"
+    : form.customFormName ?? "Uploaded Form";
+  const fieldDefs = form.formType === "quality_control" ? QC_FIELDS : JOB_COMPLETION_FIELDS;
+  const parsed = form.fields ? JSON.parse(form.fields) as Record<string, string> : {};
+  const lines = [
+    `${typeLabel.toUpperCase()}`,
+    `Job: ${jobName}`,
+    `Signed by: ${form.signatureName}`,
+    `Date: ${form.signedAt ? new Date(form.signedAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : ""}`,
+    "",
+  ];
+  if (form.formType !== "custom") {
+    lines.push("--- Form Details ---");
+    for (const fd of fieldDefs) {
+      const val = parsed[fd.key as string];
+      lines.push(`${fd.label}: ${val === "yes" ? "Yes ✓" : val === "no" ? "No ✗" : val || "—"}`);
+    }
+  } else {
+    lines.push(`Attached form: ${form.customFormName ?? "uploaded file"}`);
+  }
+  lines.push("", "Signed electronically via Saguaro.");
+  return lines.join("\n");
+}
+
+function buildEmailLink(form: JobFormRecord, jobName: string): string {
+  const typeLabel = form.formType === "job_completion" ? "Job Completion Form"
+    : form.formType === "quality_control" ? "Quality Control Checklist"
+    : form.customFormName ?? "Uploaded Form";
+  const subject = encodeURIComponent(`Signed: ${typeLabel} — ${jobName}`);
+  const body = encodeURIComponent(buildFormSummaryText(form, jobName));
+  return `mailto:?subject=${subject}&body=${body}`;
+}
+
+function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [view, setView] = useState<"list" | "fill">("list");
@@ -1709,7 +1744,7 @@ function JobFormsTab({ jobId }: { jobId: number }) {
             onClick={() => fileInputRef.current?.click()}
             className="gap-1.5"
           >
-            <Package className="h-3.5 w-3.5" />
+            <Upload className="h-3.5 w-3.5" />
             {isUploading ? "Uploading…" : "Upload Form"}
           </Button>
           <Button
@@ -1783,10 +1818,31 @@ function JobFormsTab({ jobId }: { jobId: number }) {
                         </Button>
                       )}
                       {isSigned && (
-                        <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => setExpandedId(isExpanded ? null : form.id)}>
-                          {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                          View
-                        </Button>
+                        <>
+                          <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => setExpandedId(isExpanded ? null : form.id)}>
+                            {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                            View
+                          </Button>
+                          <a
+                            href={buildEmailLink(form, jobName)}
+                            title="Send via email"
+                            className="inline-flex items-center justify-center h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                          >
+                            <Mail className="h-3.5 w-3.5" />
+                          </a>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                            title="Copy form summary"
+                            onClick={() => {
+                              navigator.clipboard.writeText(buildFormSummaryText(form, jobName));
+                              toast({ title: "Copied to clipboard" });
+                            }}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                        </>
                       )}
                       <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => setDeleteId(form.id)}>
                         <Trash2 className="h-3.5 w-3.5" />
