@@ -13,6 +13,7 @@ import LocationsList from "./pages/locations/index";
 import LocationDetail from "./pages/locations/[id]";
 import TimeOff from "./pages/time-off/index";
 import Notifications from "./pages/notifications/index";
+import TimeClock from "./pages/time-clock/index";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ function Router() {
         <Route path="/locations" component={LocationsList} />
         <Route path="/locations/:id" component={LocationDetail} />
         <Route path="/time-off" component={TimeOff} />
+        <Route path="/time-clock" component={TimeClock} />
         <Route path="/notifications" component={Notifications} />
         <Route component={NotFound} />
       </Switch>

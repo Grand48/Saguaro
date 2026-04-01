@@ -25,6 +25,8 @@ tags:
     description: Job equipment requirement operations
   - name: crew-documents
     description: Crew member training documents and certificates
+  - name: time-entries
+    description: Employee clock-in/clock-out time tracking
   - name: notifications
     description: Universal crew notifications
   - name: time-off
@@ -679,6 +681,135 @@ paths:
         "204":
           description: Deleted
 
+  # ─── TIME ENTRIES ────────────────────────────────────────────────────────────
+  /time-entries:
+    get:
+      operationId: listTimeEntries
+      tags: [time-entries]
+      summary: List all time entries (admin view)
+      responses:
+        "200":
+          description: List of time entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeEntry"
+
+  /time-entries/active:
+    get:
+      operationId: listActiveTimeEntries
+      tags: [time-entries]
+      summary: List all currently clocked-in crew
+      responses:
+        "200":
+          description: Active sessions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeEntry"
+
+  /time-entries/clock-in:
+    post:
+      operationId: clockIn
+      tags: [time-entries]
+      summary: Clock in a crew member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClockInInput"
+      responses:
+        "201":
+          description: Time entry created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeEntry"
+        "409":
+          description: Already clocked in
+
+  /time-entries/clock-out:
+    post:
+      operationId: clockOut
+      tags: [time-entries]
+      summary: Clock out a crew member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClockOutInput"
+      responses:
+        "200":
+          description: Time entry closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeEntry"
+
+  /time-entries/crew/{crewId}:
+    get:
+      operationId: listCrewTimeEntries
+      tags: [time-entries]
+      summary: List time entries for a crew member
+      parameters:
+        - name: crewId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Crew time entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeEntry"
+
+  /time-entries/crew/{crewId}/active:
+    get:
+      operationId: getActiveTimeEntry
+      tags: [time-entries]
+      summary: Get active (clocked-in) session for a crew member
+      parameters:
+        - name: crewId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Active session or null
+          content:
+            application/json:
+              schema:
+                nullable: true
+                oneOf:
+                  - $ref: "#/components/schemas/TimeEntry"
+                  - type: "null"
+
+  /time-entries/{id}:
+    delete:
+      operationId: deleteTimeEntry
+      tags: [time-entries]
+      summary: Delete a time entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   # ─── NOTIFICATIONS ───────────────────────────────────────────────────────────
   /notifications:
     get:
@@ -994,6 +1125,63 @@ paths:
 
 components:
   schemas:
+    TimeEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+        crewId:
+          type: integer
+        crewName:
+          type: string
+          nullable: true
+        crewRole:
+          type: string
+          nullable: true
+        jobId:
+          type: integer
+          nullable: true
+        jobTitle:
+          type: string
+          nullable: true
+        clockIn:
+          type: string
+          format: date-time
+        clockOut:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, crewId, clockIn, createdAt]
+
+    ClockInInput:
+      type: object
+      properties:
+        crewId:
+          type: integer
+        jobId:
+          type: integer
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required: [crewId]
+
+    ClockOutInput:
+      type: object
+      properties:
+        crewId:
+          type: integer
+        notes:
+          type: string
+          nullable: true
+      required: [crewId]
+
     Notification:
       type: object
       properties:

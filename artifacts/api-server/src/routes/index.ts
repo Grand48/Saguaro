@@ -11,11 +11,13 @@ import locationsRouter from "./locations";
 import timeOffRouter from "./time-off";
 import crewDocumentsRouter from "./crew-documents";
 import notificationsRouter from "./notifications";
+import timeEntriesRouter from "./time-entries";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(notificationsRouter);
+router.use(timeEntriesRouter);
 router.use(crewRouter);
 router.use(locationsRouter);
 router.use(timeOffRouter);

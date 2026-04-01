@@ -18,6 +18,8 @@ import type {
 
 import type {
   AssignCrewInput,
+  ClockInInput,
+  ClockOutInput,
   CreateCrewMemberInput,
   CreateEquipmentInput,
   CreateJobInput,
@@ -45,6 +47,7 @@ import type {
   Photo,
   SendMessageInput,
   Task,
+  TimeEntry,
   TimeOffRequest,
   TimeOffRequestWithCrew,
   UpdateEquipmentInput,
@@ -2828,6 +2831,589 @@ export const useDeleteEquipment = <
   TContext
 > => {
   return useMutation(getDeleteEquipmentMutationOptions(options));
+};
+
+/**
+ * @summary List all time entries (admin view)
+ */
+export const getListTimeEntriesUrl = () => {
+  return `/api/time-entries`;
+};
+
+export const listTimeEntries = async (
+  options?: RequestInit,
+): Promise<TimeEntry[]> => {
+  return customFetch<TimeEntry[]>(getListTimeEntriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListTimeEntriesQueryKey = () => {
+  return [`/api/time-entries`] as const;
+};
+
+export const getListTimeEntriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listTimeEntries>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listTimeEntries>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListTimeEntriesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listTimeEntries>>> = ({
+    signal,
+  }) => listTimeEntries({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listTimeEntries>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListTimeEntriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listTimeEntries>>
+>;
+export type ListTimeEntriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all time entries (admin view)
+ */
+
+export function useListTimeEntries<
+  TData = Awaited<ReturnType<typeof listTimeEntries>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listTimeEntries>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListTimeEntriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all currently clocked-in crew
+ */
+export const getListActiveTimeEntriesUrl = () => {
+  return `/api/time-entries/active`;
+};
+
+export const listActiveTimeEntries = async (
+  options?: RequestInit,
+): Promise<TimeEntry[]> => {
+  return customFetch<TimeEntry[]>(getListActiveTimeEntriesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListActiveTimeEntriesQueryKey = () => {
+  return [`/api/time-entries/active`] as const;
+};
+
+export const getListActiveTimeEntriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listActiveTimeEntries>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listActiveTimeEntries>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListActiveTimeEntriesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listActiveTimeEntries>>
+  > = ({ signal }) => listActiveTimeEntries({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listActiveTimeEntries>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListActiveTimeEntriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listActiveTimeEntries>>
+>;
+export type ListActiveTimeEntriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all currently clocked-in crew
+ */
+
+export function useListActiveTimeEntries<
+  TData = Awaited<ReturnType<typeof listActiveTimeEntries>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listActiveTimeEntries>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListActiveTimeEntriesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Clock in a crew member
+ */
+export const getClockInUrl = () => {
+  return `/api/time-entries/clock-in`;
+};
+
+export const clockIn = async (
+  clockInInput: ClockInInput,
+  options?: RequestInit,
+): Promise<TimeEntry> => {
+  return customFetch<TimeEntry>(getClockInUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(clockInInput),
+  });
+};
+
+export const getClockInMutationOptions = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof clockIn>>,
+    TError,
+    { data: BodyType<ClockInInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof clockIn>>,
+  TError,
+  { data: BodyType<ClockInInput> },
+  TContext
+> => {
+  const mutationKey = ["clockIn"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof clockIn>>,
+    { data: BodyType<ClockInInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return clockIn(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ClockInMutationResult = NonNullable<
+  Awaited<ReturnType<typeof clockIn>>
+>;
+export type ClockInMutationBody = BodyType<ClockInInput>;
+export type ClockInMutationError = ErrorType<void>;
+
+/**
+ * @summary Clock in a crew member
+ */
+export const useClockIn = <
+  TError = ErrorType<void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof clockIn>>,
+    TError,
+    { data: BodyType<ClockInInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof clockIn>>,
+  TError,
+  { data: BodyType<ClockInInput> },
+  TContext
+> => {
+  return useMutation(getClockInMutationOptions(options));
+};
+
+/**
+ * @summary Clock out a crew member
+ */
+export const getClockOutUrl = () => {
+  return `/api/time-entries/clock-out`;
+};
+
+export const clockOut = async (
+  clockOutInput: ClockOutInput,
+  options?: RequestInit,
+): Promise<TimeEntry> => {
+  return customFetch<TimeEntry>(getClockOutUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(clockOutInput),
+  });
+};
+
+export const getClockOutMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof clockOut>>,
+    TError,
+    { data: BodyType<ClockOutInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof clockOut>>,
+  TError,
+  { data: BodyType<ClockOutInput> },
+  TContext
+> => {
+  const mutationKey = ["clockOut"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof clockOut>>,
+    { data: BodyType<ClockOutInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return clockOut(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ClockOutMutationResult = NonNullable<
+  Awaited<ReturnType<typeof clockOut>>
+>;
+export type ClockOutMutationBody = BodyType<ClockOutInput>;
+export type ClockOutMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Clock out a crew member
+ */
+export const useClockOut = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof clockOut>>,
+    TError,
+    { data: BodyType<ClockOutInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof clockOut>>,
+  TError,
+  { data: BodyType<ClockOutInput> },
+  TContext
+> => {
+  return useMutation(getClockOutMutationOptions(options));
+};
+
+/**
+ * @summary List time entries for a crew member
+ */
+export const getListCrewTimeEntriesUrl = (crewId: number) => {
+  return `/api/time-entries/crew/${crewId}`;
+};
+
+export const listCrewTimeEntries = async (
+  crewId: number,
+  options?: RequestInit,
+): Promise<TimeEntry[]> => {
+  return customFetch<TimeEntry[]>(getListCrewTimeEntriesUrl(crewId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListCrewTimeEntriesQueryKey = (crewId: number) => {
+  return [`/api/time-entries/crew/${crewId}`] as const;
+};
+
+export const getListCrewTimeEntriesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCrewTimeEntries>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCrewTimeEntries>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListCrewTimeEntriesQueryKey(crewId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listCrewTimeEntries>>
+  > = ({ signal }) =>
+    listCrewTimeEntries(crewId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!crewId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCrewTimeEntries>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCrewTimeEntriesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCrewTimeEntries>>
+>;
+export type ListCrewTimeEntriesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List time entries for a crew member
+ */
+
+export function useListCrewTimeEntries<
+  TData = Awaited<ReturnType<typeof listCrewTimeEntries>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCrewTimeEntries>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCrewTimeEntriesQueryOptions(crewId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get active (clocked-in) session for a crew member
+ */
+export const getGetActiveTimeEntryUrl = (crewId: number) => {
+  return `/api/time-entries/crew/${crewId}/active`;
+};
+
+export const getActiveTimeEntry = async (
+  crewId: number,
+  options?: RequestInit,
+): Promise<TimeEntry | null> => {
+  return customFetch<TimeEntry | null>(getGetActiveTimeEntryUrl(crewId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetActiveTimeEntryQueryKey = (crewId: number) => {
+  return [`/api/time-entries/crew/${crewId}/active`] as const;
+};
+
+export const getGetActiveTimeEntryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getActiveTimeEntry>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActiveTimeEntry>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetActiveTimeEntryQueryKey(crewId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getActiveTimeEntry>>
+  > = ({ signal }) => getActiveTimeEntry(crewId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!crewId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getActiveTimeEntry>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetActiveTimeEntryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getActiveTimeEntry>>
+>;
+export type GetActiveTimeEntryQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get active (clocked-in) session for a crew member
+ */
+
+export function useGetActiveTimeEntry<
+  TData = Awaited<ReturnType<typeof getActiveTimeEntry>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActiveTimeEntry>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetActiveTimeEntryQueryOptions(crewId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Delete a time entry
+ */
+export const getDeleteTimeEntryUrl = (id: number) => {
+  return `/api/time-entries/${id}`;
+};
+
+export const deleteTimeEntry = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteTimeEntryUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteTimeEntryMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTimeEntry>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteTimeEntry>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteTimeEntry"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteTimeEntry>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteTimeEntry(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteTimeEntryMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteTimeEntry>>
+>;
+
+export type DeleteTimeEntryMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a time entry
+ */
+export const useDeleteTimeEntry = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTimeEntry>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteTimeEntry>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteTimeEntryMutationOptions(options));
 };
 
 /**

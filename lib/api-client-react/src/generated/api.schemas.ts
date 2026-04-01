@@ -5,6 +5,30 @@
  * Crew Scheduler API
  * OpenAPI spec version: 0.1.0
  */
+export interface TimeEntry {
+  id: number;
+  crewId: number;
+  crewName?: string | null;
+  crewRole?: string | null;
+  jobId?: number | null;
+  jobTitle?: string | null;
+  clockIn: string;
+  clockOut?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface ClockInInput {
+  crewId: number;
+  jobId?: number | null;
+  notes?: string | null;
+}
+
+export interface ClockOutInput {
+  crewId: number;
+  notes?: string | null;
+}
+
 export type NotificationPriority =
   (typeof NotificationPriority)[keyof typeof NotificationPriority];
 

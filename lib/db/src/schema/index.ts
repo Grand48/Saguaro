@@ -8,3 +8,4 @@ export * from "./photos";
 export * from "./equipment";
 export * from "./time-off";
 export * from "./notifications";
+export * from "./time-entries";

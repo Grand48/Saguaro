@@ -618,6 +618,127 @@ export const DeleteEquipmentParams = zod.object({
 });
 
 /**
+ * @summary List all time entries (admin view)
+ */
+export const ListTimeEntriesResponseItem = zod.object({
+  id: zod.number(),
+  crewId: zod.number(),
+  crewName: zod.string().nullish(),
+  crewRole: zod.string().nullish(),
+  jobId: zod.number().nullish(),
+  jobTitle: zod.string().nullish(),
+  clockIn: zod.coerce.date(),
+  clockOut: zod.coerce.date().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListTimeEntriesResponse = zod.array(ListTimeEntriesResponseItem);
+
+/**
+ * @summary List all currently clocked-in crew
+ */
+export const ListActiveTimeEntriesResponseItem = zod.object({
+  id: zod.number(),
+  crewId: zod.number(),
+  crewName: zod.string().nullish(),
+  crewRole: zod.string().nullish(),
+  jobId: zod.number().nullish(),
+  jobTitle: zod.string().nullish(),
+  clockIn: zod.coerce.date(),
+  clockOut: zod.coerce.date().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListActiveTimeEntriesResponse = zod.array(
+  ListActiveTimeEntriesResponseItem,
+);
+
+/**
+ * @summary Clock in a crew member
+ */
+export const ClockInBody = zod.object({
+  crewId: zod.number(),
+  jobId: zod.number().nullish(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Clock out a crew member
+ */
+export const ClockOutBody = zod.object({
+  crewId: zod.number(),
+  notes: zod.string().nullish(),
+});
+
+export const ClockOutResponse = zod.object({
+  id: zod.number(),
+  crewId: zod.number(),
+  crewName: zod.string().nullish(),
+  crewRole: zod.string().nullish(),
+  jobId: zod.number().nullish(),
+  jobTitle: zod.string().nullish(),
+  clockIn: zod.coerce.date(),
+  clockOut: zod.coerce.date().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary List time entries for a crew member
+ */
+export const ListCrewTimeEntriesParams = zod.object({
+  crewId: zod.coerce.number(),
+});
+
+export const ListCrewTimeEntriesResponseItem = zod.object({
+  id: zod.number(),
+  crewId: zod.number(),
+  crewName: zod.string().nullish(),
+  crewRole: zod.string().nullish(),
+  jobId: zod.number().nullish(),
+  jobTitle: zod.string().nullish(),
+  clockIn: zod.coerce.date(),
+  clockOut: zod.coerce.date().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListCrewTimeEntriesResponse = zod.array(
+  ListCrewTimeEntriesResponseItem,
+);
+
+/**
+ * @summary Get active (clocked-in) session for a crew member
+ */
+export const GetActiveTimeEntryParams = zod.object({
+  crewId: zod.coerce.number(),
+});
+
+export const GetActiveTimeEntryResponse = zod
+  .union([
+    zod.object({
+      id: zod.number(),
+      crewId: zod.number(),
+      crewName: zod.string().nullish(),
+      crewRole: zod.string().nullish(),
+      jobId: zod.number().nullish(),
+      jobTitle: zod.string().nullish(),
+      clockIn: zod.coerce.date(),
+      clockOut: zod.coerce.date().nullish(),
+      notes: zod.string().nullish(),
+      createdAt: zod.coerce.date(),
+    }),
+    zod.null(),
+  ])
+  .nullable();
+
+/**
+ * @summary Delete a time entry
+ */
+export const DeleteTimeEntryParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary List all notifications with read counts (admin view)
  */
 export const ListNotificationsResponseItem = zod

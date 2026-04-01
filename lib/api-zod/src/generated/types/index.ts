@@ -7,6 +7,8 @@
  */
 
 export * from "./assignCrewInput";
+export * from "./clockInInput";
+export * from "./clockOutInput";
 export * from "./createCrewMemberInput";
 export * from "./createEquipmentInput";
 export * from "./createEquipmentInputStatus";
@@ -46,6 +48,7 @@ export * from "./photo";
 export * from "./sendMessageInput";
 export * from "./task";
 export * from "./taskStatus";
+export * from "./timeEntry";
 export * from "./timeOffRequest";
 export * from "./timeOffRequestStatus";
 export * from "./timeOffRequestWithCrew";
