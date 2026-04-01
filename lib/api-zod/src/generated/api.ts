@@ -1313,6 +1313,72 @@ export const DeleteEmployeeRequestParams = zod.object({
 });
 
 /**
+ * @summary List lodging bookings (optionally filtered by month)
+ */
+export const ListLodgingBookingsQueryParams = zod.object({
+  month: zod.coerce
+    .string()
+    .optional()
+    .describe("Filter by month in YYYY-MM format (e.g. 2025-04)"),
+});
+
+export const ListLodgingBookingsResponseItem = zod.object({
+  id: zod.number(),
+  room: zod.string(),
+  guestName: zod.string(),
+  checkIn: zod.string().describe("ISO date string (YYYY-MM-DD)"),
+  checkOut: zod.string().describe("ISO date string (YYYY-MM-DD)"),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+export const ListLodgingBookingsResponse = zod.array(
+  ListLodgingBookingsResponseItem,
+);
+
+/**
+ * @summary Create a lodging booking
+ */
+export const CreateLodgingBookingBody = zod.object({
+  room: zod.string(),
+  guestName: zod.string(),
+  checkIn: zod.string(),
+  checkOut: zod.string(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Update a lodging booking
+ */
+export const UpdateLodgingBookingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateLodgingBookingBody = zod.object({
+  room: zod.string().optional(),
+  guestName: zod.string().optional(),
+  checkIn: zod.string().optional(),
+  checkOut: zod.string().optional(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateLodgingBookingResponse = zod.object({
+  id: zod.number(),
+  room: zod.string(),
+  guestName: zod.string(),
+  checkIn: zod.string().describe("ISO date string (YYYY-MM-DD)"),
+  checkOut: zod.string().describe("ISO date string (YYYY-MM-DD)"),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Delete a lodging booking
+ */
+export const DeleteLodgingBookingParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary List all side quests
  */
 export const ListSideQuestsResponseItem = zod.object({

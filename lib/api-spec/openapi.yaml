@@ -1382,6 +1382,82 @@ paths:
         "204":
           description: Deleted
 
+  /lodging:
+    get:
+      operationId: listLodgingBookings
+      tags: [lodging]
+      summary: List lodging bookings (optionally filtered by month)
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: string
+          description: "Filter by month in YYYY-MM format (e.g. 2025-04)"
+      responses:
+        "200":
+          description: List of bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LodgingBooking"
+    post:
+      operationId: createLodgingBooking
+      tags: [lodging]
+      summary: Create a lodging booking
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLodgingBookingInput"
+      responses:
+        "201":
+          description: Created booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LodgingBooking"
+
+  /lodging/{id}:
+    put:
+      operationId: updateLodgingBooking
+      tags: [lodging]
+      summary: Update a lodging booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLodgingBookingInput"
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LodgingBooking"
+    delete:
+      operationId: deleteLodgingBooking
+      tags: [lodging]
+      summary: Delete a lodging booking
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /side-quests:
     get:
       operationId: listSideQuests
@@ -2499,6 +2575,69 @@ components:
           enum: [open, claimed, completed]
         claimedByCrewId:
           type: integer
+          nullable: true
+
+    LodgingBooking:
+      type: object
+      properties:
+        id:
+          type: integer
+        room:
+          type: string
+        guestName:
+          type: string
+        checkIn:
+          type: string
+          description: ISO date string (YYYY-MM-DD)
+        checkOut:
+          type: string
+          description: ISO date string (YYYY-MM-DD)
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - room
+        - guestName
+        - checkIn
+        - checkOut
+        - createdAt
+
+    CreateLodgingBookingInput:
+      type: object
+      properties:
+        room:
+          type: string
+        guestName:
+          type: string
+        checkIn:
+          type: string
+        checkOut:
+          type: string
+        notes:
+          type: string
+          nullable: true
+      required:
+        - room
+        - guestName
+        - checkIn
+        - checkOut
+
+    UpdateLodgingBookingInput:
+      type: object
+      properties:
+        room:
+          type: string
+        guestName:
+          type: string
+        checkIn:
+          type: string
+        checkOut:
+          type: string
+        notes:
+          type: string
           nullable: true
 
     DashboardSummary:

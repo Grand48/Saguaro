@@ -690,6 +690,34 @@ export interface UpdateSideQuestInput {
   claimedByCrewId?: number | null;
 }
 
+export interface LodgingBooking {
+  id: number;
+  room: string;
+  guestName: string;
+  /** ISO date string (YYYY-MM-DD) */
+  checkIn: string;
+  /** ISO date string (YYYY-MM-DD) */
+  checkOut: string;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface CreateLodgingBookingInput {
+  room: string;
+  guestName: string;
+  checkIn: string;
+  checkOut: string;
+  notes?: string | null;
+}
+
+export interface UpdateLodgingBookingInput {
+  room?: string;
+  guestName?: string;
+  checkIn?: string;
+  checkOut?: string;
+  notes?: string | null;
+}
+
 export interface DashboardSummary {
   totalJobs: number;
   activeJobs: number;
@@ -719,3 +747,10 @@ export const ListEmployeeRequestsStatus = {
   pending: "pending",
   fulfilled: "fulfilled",
 } as const;
+
+export type ListLodgingBookingsParams = {
+  /**
+   * Filter by month in YYYY-MM format (e.g. 2025-04)
+   */
+  month?: string;
+};

@@ -130,6 +130,17 @@ Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHea
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
 
+## Company Lodging Feature
+
+Tracks room bookings for company lodging rooms C1–C10.
+
+- **Route**: `/lodging` — monthly calendar grid + booking list
+- **DB table**: `lodging_bookings` — room, guest_name, check_in (YYYY-MM-DD), check_out (YYYY-MM-DD), notes
+- **API**: `GET /api/lodging?month=YYYY-MM`, `POST /api/lodging`, `PUT /api/lodging/:id`, `DELETE /api/lodging/:id`
+- **Calendar view**: Rooms as rows, days of month as columns; bookings render as colored spans with colSpan
+- **Export**: "Export CSV" downloads a `.csv`; "Email Report" opens mailto with the report in the body
+- **CSV columns**: Room, Guest Name, Check-In, Check-Out, Nights Stayed, Notes
+
 ## Pending: RevenueCat Subscription Integration
 
 The user wants subscription-based pricing ($19.99/month, $149.99/year) for the Saguaro Mobile app.

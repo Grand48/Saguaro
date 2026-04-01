@@ -27,6 +27,7 @@ import type {
   CreateJobFormInput,
   CreateJobInput,
   CreateLocationInput,
+  CreateLodgingBookingInput,
   CreateNotificationInput,
   CreateSideQuestInput,
   CreateTaskInput,
@@ -44,9 +45,11 @@ import type {
   JobDetail,
   JobForm,
   ListEmployeeRequestsParams,
+  ListLodgingBookingsParams,
   Location,
   LocationDetail,
   LocationWithJobs,
+  LodgingBooking,
   MarkNotificationReadBody,
   Message,
   Notification,
@@ -62,6 +65,7 @@ import type {
   TimeOffRequestWithCrew,
   UpdateEquipmentInput,
   UpdateJobContactInput,
+  UpdateLodgingBookingInput,
   UpdateSideQuestInput,
   UpdateTaskInput,
   UpdateTimeOffInput,
@@ -5902,6 +5906,365 @@ export const useDeleteEmployeeRequest = <
   TContext
 > => {
   return useMutation(getDeleteEmployeeRequestMutationOptions(options));
+};
+
+/**
+ * @summary List lodging bookings (optionally filtered by month)
+ */
+export const getListLodgingBookingsUrl = (
+  params?: ListLodgingBookingsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/lodging?${stringifiedParams}`
+    : `/api/lodging`;
+};
+
+export const listLodgingBookings = async (
+  params?: ListLodgingBookingsParams,
+  options?: RequestInit,
+): Promise<LodgingBooking[]> => {
+  return customFetch<LodgingBooking[]>(getListLodgingBookingsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListLodgingBookingsQueryKey = (
+  params?: ListLodgingBookingsParams,
+) => {
+  return [`/api/lodging`, ...(params ? [params] : [])] as const;
+};
+
+export const getListLodgingBookingsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listLodgingBookings>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListLodgingBookingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listLodgingBookings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListLodgingBookingsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listLodgingBookings>>
+  > = ({ signal }) =>
+    listLodgingBookings(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listLodgingBookings>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListLodgingBookingsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listLodgingBookings>>
+>;
+export type ListLodgingBookingsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List lodging bookings (optionally filtered by month)
+ */
+
+export function useListLodgingBookings<
+  TData = Awaited<ReturnType<typeof listLodgingBookings>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListLodgingBookingsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listLodgingBookings>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListLodgingBookingsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a lodging booking
+ */
+export const getCreateLodgingBookingUrl = () => {
+  return `/api/lodging`;
+};
+
+export const createLodgingBooking = async (
+  createLodgingBookingInput: CreateLodgingBookingInput,
+  options?: RequestInit,
+): Promise<LodgingBooking> => {
+  return customFetch<LodgingBooking>(getCreateLodgingBookingUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createLodgingBookingInput),
+  });
+};
+
+export const getCreateLodgingBookingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createLodgingBooking>>,
+    TError,
+    { data: BodyType<CreateLodgingBookingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createLodgingBooking>>,
+  TError,
+  { data: BodyType<CreateLodgingBookingInput> },
+  TContext
+> => {
+  const mutationKey = ["createLodgingBooking"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createLodgingBooking>>,
+    { data: BodyType<CreateLodgingBookingInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createLodgingBooking(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateLodgingBookingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createLodgingBooking>>
+>;
+export type CreateLodgingBookingMutationBody =
+  BodyType<CreateLodgingBookingInput>;
+export type CreateLodgingBookingMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a lodging booking
+ */
+export const useCreateLodgingBooking = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createLodgingBooking>>,
+    TError,
+    { data: BodyType<CreateLodgingBookingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createLodgingBooking>>,
+  TError,
+  { data: BodyType<CreateLodgingBookingInput> },
+  TContext
+> => {
+  return useMutation(getCreateLodgingBookingMutationOptions(options));
+};
+
+/**
+ * @summary Update a lodging booking
+ */
+export const getUpdateLodgingBookingUrl = (id: number) => {
+  return `/api/lodging/${id}`;
+};
+
+export const updateLodgingBooking = async (
+  id: number,
+  updateLodgingBookingInput: UpdateLodgingBookingInput,
+  options?: RequestInit,
+): Promise<LodgingBooking> => {
+  return customFetch<LodgingBooking>(getUpdateLodgingBookingUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateLodgingBookingInput),
+  });
+};
+
+export const getUpdateLodgingBookingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateLodgingBooking>>,
+    TError,
+    { id: number; data: BodyType<UpdateLodgingBookingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateLodgingBooking>>,
+  TError,
+  { id: number; data: BodyType<UpdateLodgingBookingInput> },
+  TContext
+> => {
+  const mutationKey = ["updateLodgingBooking"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateLodgingBooking>>,
+    { id: number; data: BodyType<UpdateLodgingBookingInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateLodgingBooking(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateLodgingBookingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateLodgingBooking>>
+>;
+export type UpdateLodgingBookingMutationBody =
+  BodyType<UpdateLodgingBookingInput>;
+export type UpdateLodgingBookingMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a lodging booking
+ */
+export const useUpdateLodgingBooking = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateLodgingBooking>>,
+    TError,
+    { id: number; data: BodyType<UpdateLodgingBookingInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateLodgingBooking>>,
+  TError,
+  { id: number; data: BodyType<UpdateLodgingBookingInput> },
+  TContext
+> => {
+  return useMutation(getUpdateLodgingBookingMutationOptions(options));
+};
+
+/**
+ * @summary Delete a lodging booking
+ */
+export const getDeleteLodgingBookingUrl = (id: number) => {
+  return `/api/lodging/${id}`;
+};
+
+export const deleteLodgingBooking = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteLodgingBookingUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteLodgingBookingMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteLodgingBooking>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteLodgingBooking>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteLodgingBooking"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteLodgingBooking>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteLodgingBooking(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteLodgingBookingMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteLodgingBooking>>
+>;
+
+export type DeleteLodgingBookingMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a lodging booking
+ */
+export const useDeleteLodgingBooking = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteLodgingBooking>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteLodgingBooking>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteLodgingBookingMutationOptions(options));
 };
 
 /**
