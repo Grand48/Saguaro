@@ -88,6 +88,8 @@ function buildMobileFormSummary(form: any, jobName: string): string {
       lines.push(`${parsed[item.key] === "true" ? "[✓]" : "[ ]"} ${item.label}`);
     }
     lines.push("", "--- TEMP & PRESSURE LOG ---");
+    if (parsed["tl_start_time"]) lines.push(`Start Time: ${parsed["tl_start_time"]}`);
+    if (parsed["tl_end_time"]) lines.push(`End Time: ${parsed["tl_end_time"]}`);
     lines.push("Min | P1 Top | P1 Bot | PSI | P2 Top | P2 Bot | PSI");
     for (const min of TIME_INTERVALS) {
       const row = [String(min), ...TIME_LOG_COLS.map((c) => parsed[`tl_${min}_${c.key}`] ?? "")].join(" | ");
@@ -658,6 +660,28 @@ export default function JobDetailScreen() {
                     <View style={{ padding: 14, borderBottomWidth: 1, borderBottomColor: colors.border }}>
                       <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground }}>Temperature &amp; Pressure Log</Text>
                       <Text style={{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginTop: 2 }}>Record readings every 5 minutes</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", gap: 12, padding: 14, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 11, fontFamily: "Inter_500Medium", color: colors.mutedForeground, marginBottom: 4 }}>Start Time</Text>
+                        <TextInput
+                          style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
+                          value={formValues["tl_start_time"] ?? ""}
+                          onChangeText={(v) => setFormValues((prev) => ({ ...prev, tl_start_time: v }))}
+                          placeholder="e.g. 08:30"
+                          placeholderTextColor={colors.mutedForeground}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 11, fontFamily: "Inter_500Medium", color: colors.mutedForeground, marginBottom: 4 }}>End Time</Text>
+                        <TextInput
+                          style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
+                          value={formValues["tl_end_time"] ?? ""}
+                          onChangeText={(v) => setFormValues((prev) => ({ ...prev, tl_end_time: v }))}
+                          placeholder="e.g. 10:15"
+                          placeholderTextColor={colors.mutedForeground}
+                        />
+                      </View>
                     </View>
                     <ScrollView horizontal showsHorizontalScrollIndicator>
                       <View>

@@ -1510,6 +1510,8 @@ function buildFormSummaryText(form: JobFormRecord, jobName: string): string {
       lines.push(`${parsed[item.key] === "true" ? "[✓]" : "[ ]"} ${item.label}`);
     }
     lines.push("", "--- TEMPERATURE & PRESSURE LOG ---");
+    if (parsed["tl_start_time"]) lines.push(`Start Time: ${parsed["tl_start_time"]}`);
+    if (parsed["tl_end_time"]) lines.push(`End Time: ${parsed["tl_end_time"]}`);
     const header = ["Min", ...TIME_LOG_COLS.map((c) => c.label)].join(" | ");
     lines.push(header);
     for (const min of TIME_INTERVALS) {
@@ -1697,6 +1699,26 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
                 <CardTitle className="text-sm font-semibold">Temperature &amp; Pressure Log</CardTitle>
                 <p className="text-xs text-muted-foreground mt-0.5">Record readings every 5 minutes</p>
               </CardHeader>
+              <CardContent className="p-4 pb-0 border-b flex gap-6">
+                <div className="space-y-1 flex-1">
+                  <label className="text-xs font-medium text-muted-foreground">Start Time</label>
+                  <input
+                    type="time"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    value={formValues["tl_start_time"] ?? ""}
+                    onChange={(e) => setFormValues((prev) => ({ ...prev, tl_start_time: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1 flex-1">
+                  <label className="text-xs font-medium text-muted-foreground">End Time</label>
+                  <input
+                    type="time"
+                    className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    value={formValues["tl_end_time"] ?? ""}
+                    onChange={(e) => setFormValues((prev) => ({ ...prev, tl_end_time: e.target.value }))}
+                  />
+                </div>
+              </CardContent>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs border-collapse">
