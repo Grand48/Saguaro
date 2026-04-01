@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/mobile/"
+title = "Saguaro Mobile"
+version = "1.0.0"
+id = "artifacts/saguaro-mobile"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/mobile/" ]
+localPort = 26188
+
+[services.development]
+run = "pnpm --filter @workspace/saguaro-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/saguaro-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/saguaro-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "26188"
+BASE_PATH = "/mobile/"

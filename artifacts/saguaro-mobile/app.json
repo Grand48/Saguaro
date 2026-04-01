@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Saguaro",
+    "slug": "saguaro-mobile",
+    "version": "2.4.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "saguaro-mobile",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1a9e4a"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.saguaro.fieldops"
+    },
+    "android": {
+      "package": "com.saguaro.fieldops"
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
