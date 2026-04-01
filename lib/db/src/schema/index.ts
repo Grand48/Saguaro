@@ -1,4 +1,5 @@
 export * from "./crew";
+export * from "./crew-documents";
 export * from "./locations";
 export * from "./jobs";
 export * from "./tasks";

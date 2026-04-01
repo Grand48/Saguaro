@@ -618,6 +618,59 @@ export const DeleteEquipmentParams = zod.object({
 });
 
 /**
+ * @summary List documents for a crew member (metadata only, no file data)
+ */
+export const ListCrewDocumentsParams = zod.object({
+  crewId: zod.coerce.number(),
+});
+
+export const ListCrewDocumentsResponseItem = zod.object({
+  id: zod.number(),
+  crewId: zod.number(),
+  title: zod.string(),
+  docType: zod.enum(["certificate", "license", "training", "safety", "other"]),
+  fileName: zod.string(),
+  fileMimeType: zod.string(),
+  expiryDate: zod.coerce.date().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+export const ListCrewDocumentsResponse = zod.array(
+  ListCrewDocumentsResponseItem,
+);
+
+/**
+ * @summary Upload a document for a crew member
+ */
+export const UploadCrewDocumentParams = zod.object({
+  crewId: zod.coerce.number(),
+});
+
+export const UploadCrewDocumentBody = zod.object({
+  title: zod.string(),
+  docType: zod.enum(["certificate", "license", "training", "safety", "other"]),
+  fileName: zod.string(),
+  fileMimeType: zod.string(),
+  fileData: zod.string().describe("Base64-encoded file content"),
+  expiryDate: zod.coerce.date().nullish(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Delete a crew document
+ */
+export const DeleteCrewDocumentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Download the file for a crew document
+ */
+export const DownloadCrewDocumentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary List all time-off requests with crew info
  */
 export const ListTimeOffRequestsResponseItem = zod

@@ -24,6 +24,7 @@ import type {
   CreateLocationInput,
   CreateTaskInput,
   CreateTimeOffInput,
+  CrewDocument,
   CrewMember,
   DashboardSummary,
   Equipment,
@@ -43,6 +44,7 @@ import type {
   UpdateEquipmentInput,
   UpdateTaskInput,
   UpdateTimeOffInput,
+  UploadCrewDocumentInput,
   UploadPhotoInput,
 } from "./api.schemas";
 
@@ -2821,6 +2823,353 @@ export const useDeleteEquipment = <
 > => {
   return useMutation(getDeleteEquipmentMutationOptions(options));
 };
+
+/**
+ * @summary List documents for a crew member (metadata only, no file data)
+ */
+export const getListCrewDocumentsUrl = (crewId: number) => {
+  return `/api/crew/${crewId}/documents`;
+};
+
+export const listCrewDocuments = async (
+  crewId: number,
+  options?: RequestInit,
+): Promise<CrewDocument[]> => {
+  return customFetch<CrewDocument[]>(getListCrewDocumentsUrl(crewId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListCrewDocumentsQueryKey = (crewId: number) => {
+  return [`/api/crew/${crewId}/documents`] as const;
+};
+
+export const getListCrewDocumentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCrewDocuments>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCrewDocuments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListCrewDocumentsQueryKey(crewId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listCrewDocuments>>
+  > = ({ signal }) => listCrewDocuments(crewId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!crewId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCrewDocuments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCrewDocumentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCrewDocuments>>
+>;
+export type ListCrewDocumentsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List documents for a crew member (metadata only, no file data)
+ */
+
+export function useListCrewDocuments<
+  TData = Awaited<ReturnType<typeof listCrewDocuments>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listCrewDocuments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCrewDocumentsQueryOptions(crewId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Upload a document for a crew member
+ */
+export const getUploadCrewDocumentUrl = (crewId: number) => {
+  return `/api/crew/${crewId}/documents`;
+};
+
+export const uploadCrewDocument = async (
+  crewId: number,
+  uploadCrewDocumentInput: UploadCrewDocumentInput,
+  options?: RequestInit,
+): Promise<CrewDocument> => {
+  return customFetch<CrewDocument>(getUploadCrewDocumentUrl(crewId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(uploadCrewDocumentInput),
+  });
+};
+
+export const getUploadCrewDocumentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadCrewDocument>>,
+    TError,
+    { crewId: number; data: BodyType<UploadCrewDocumentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadCrewDocument>>,
+  TError,
+  { crewId: number; data: BodyType<UploadCrewDocumentInput> },
+  TContext
+> => {
+  const mutationKey = ["uploadCrewDocument"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadCrewDocument>>,
+    { crewId: number; data: BodyType<UploadCrewDocumentInput> }
+  > = (props) => {
+    const { crewId, data } = props ?? {};
+
+    return uploadCrewDocument(crewId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadCrewDocumentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadCrewDocument>>
+>;
+export type UploadCrewDocumentMutationBody = BodyType<UploadCrewDocumentInput>;
+export type UploadCrewDocumentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Upload a document for a crew member
+ */
+export const useUploadCrewDocument = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadCrewDocument>>,
+    TError,
+    { crewId: number; data: BodyType<UploadCrewDocumentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadCrewDocument>>,
+  TError,
+  { crewId: number; data: BodyType<UploadCrewDocumentInput> },
+  TContext
+> => {
+  return useMutation(getUploadCrewDocumentMutationOptions(options));
+};
+
+/**
+ * @summary Delete a crew document
+ */
+export const getDeleteCrewDocumentUrl = (id: number) => {
+  return `/api/crew-documents/${id}`;
+};
+
+export const deleteCrewDocument = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteCrewDocumentUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteCrewDocumentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCrewDocument>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteCrewDocument>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteCrewDocument"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteCrewDocument>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteCrewDocument(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteCrewDocumentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteCrewDocument>>
+>;
+
+export type DeleteCrewDocumentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a crew document
+ */
+export const useDeleteCrewDocument = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCrewDocument>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteCrewDocument>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteCrewDocumentMutationOptions(options));
+};
+
+/**
+ * @summary Download the file for a crew document
+ */
+export const getDownloadCrewDocumentUrl = (id: number) => {
+  return `/api/crew-documents/${id}/download`;
+};
+
+export const downloadCrewDocument = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDownloadCrewDocumentUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getDownloadCrewDocumentQueryKey = (id: number) => {
+  return [`/api/crew-documents/${id}/download`] as const;
+};
+
+export const getDownloadCrewDocumentQueryOptions = <
+  TData = Awaited<ReturnType<typeof downloadCrewDocument>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadCrewDocument>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getDownloadCrewDocumentQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof downloadCrewDocument>>
+  > = ({ signal }) => downloadCrewDocument(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof downloadCrewDocument>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type DownloadCrewDocumentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof downloadCrewDocument>>
+>;
+export type DownloadCrewDocumentQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Download the file for a crew document
+ */
+
+export function useDownloadCrewDocument<
+  TData = Awaited<ReturnType<typeof downloadCrewDocument>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadCrewDocument>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getDownloadCrewDocumentQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List all time-off requests with crew info

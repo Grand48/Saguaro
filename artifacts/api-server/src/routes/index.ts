@@ -9,6 +9,7 @@ import equipmentRouter from "./equipment";
 import dashboardRouter from "./dashboard";
 import locationsRouter from "./locations";
 import timeOffRouter from "./time-off";
+import crewDocumentsRouter from "./crew-documents";
 
 const router: IRouter = Router();
 
@@ -16,6 +17,7 @@ router.use(healthRouter);
 router.use(crewRouter);
 router.use(locationsRouter);
 router.use(timeOffRouter);
+router.use(crewDocumentsRouter);
 router.use(jobsRouter);
 router.use(tasksRouter);
 router.use(messagesRouter);

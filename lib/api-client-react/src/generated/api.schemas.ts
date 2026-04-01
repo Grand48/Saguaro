@@ -5,6 +5,51 @@
  * Crew Scheduler API
  * OpenAPI spec version: 0.1.0
  */
+export type CrewDocumentDocType =
+  (typeof CrewDocumentDocType)[keyof typeof CrewDocumentDocType];
+
+export const CrewDocumentDocType = {
+  certificate: "certificate",
+  license: "license",
+  training: "training",
+  safety: "safety",
+  other: "other",
+} as const;
+
+export interface CrewDocument {
+  id: number;
+  crewId: number;
+  title: string;
+  docType: CrewDocumentDocType;
+  fileName: string;
+  fileMimeType: string;
+  expiryDate?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export type UploadCrewDocumentInputDocType =
+  (typeof UploadCrewDocumentInputDocType)[keyof typeof UploadCrewDocumentInputDocType];
+
+export const UploadCrewDocumentInputDocType = {
+  certificate: "certificate",
+  license: "license",
+  training: "training",
+  safety: "safety",
+  other: "other",
+} as const;
+
+export interface UploadCrewDocumentInput {
+  title: string;
+  docType: UploadCrewDocumentInputDocType;
+  fileName: string;
+  fileMimeType: string;
+  /** Base64-encoded file content */
+  fileData: string;
+  expiryDate?: string | null;
+  notes?: string | null;
+}
+
 export type TimeOffRequestStatus =
   (typeof TimeOffRequestStatus)[keyof typeof TimeOffRequestStatus];
 

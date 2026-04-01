@@ -23,6 +23,8 @@ tags:
     description: Photo sharing operations
   - name: equipment
     description: Job equipment requirement operations
+  - name: crew-documents
+    description: Crew member training documents and certificates
   - name: time-off
     description: Time-off request operations
   - name: dashboard
@@ -675,6 +677,81 @@ paths:
         "204":
           description: Deleted
 
+  # ─── CREW DOCUMENTS ──────────────────────────────────────────────────────────
+  /crew/{crewId}/documents:
+    get:
+      operationId: listCrewDocuments
+      tags: [crew-documents]
+      summary: List documents for a crew member (metadata only, no file data)
+      parameters:
+        - name: crewId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CrewDocument"
+    post:
+      operationId: uploadCrewDocument
+      tags: [crew-documents]
+      summary: Upload a document for a crew member
+      parameters:
+        - name: crewId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadCrewDocumentInput"
+      responses:
+        "201":
+          description: Uploaded document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CrewDocument"
+
+  /crew-documents/{id}:
+    delete:
+      operationId: deleteCrewDocument
+      tags: [crew-documents]
+      summary: Delete a crew document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /crew-documents/{id}/download:
+    get:
+      operationId: downloadCrewDocument
+      tags: [crew-documents]
+      summary: Download the file for a crew document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: File binary
+
   # ─── TIME OFF ────────────────────────────────────────────────────────────────
   /time-off:
     get:
@@ -798,6 +875,70 @@ paths:
 
 components:
   schemas:
+    CrewDocument:
+      type: object
+      properties:
+        id:
+          type: integer
+        crewId:
+          type: integer
+        title:
+          type: string
+        docType:
+          type: string
+          enum: [certificate, license, training, safety, other]
+        fileName:
+          type: string
+        fileMimeType:
+          type: string
+        expiryDate:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - crewId
+        - title
+        - docType
+        - fileName
+        - fileMimeType
+        - createdAt
+
+    UploadCrewDocumentInput:
+      type: object
+      properties:
+        title:
+          type: string
+        docType:
+          type: string
+          enum: [certificate, license, training, safety, other]
+        fileName:
+          type: string
+        fileMimeType:
+          type: string
+        fileData:
+          type: string
+          description: Base64-encoded file content
+        expiryDate:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+        - title
+        - docType
+        - fileName
+        - fileMimeType
+        - fileData
+
     TimeOffRequest:
       type: object
       properties:
