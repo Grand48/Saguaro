@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Users, Calendar, MapPin, CalendarOff, Menu, Bell, Clock, Hammer, Zap } from "lucide-react";
+import { Users, Calendar, MapPin, CalendarOff, Menu, Bell, Clock, Hammer, Zap, Package } from "lucide-react";
 import { CactusHardHat } from "@/components/icons/CactusHardHat";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -52,6 +52,7 @@ const NavItems = () => {
     { href: "/time-clock", label: "Time Clock", icon: Clock },
     { href: "/notifications", label: "Notifications", icon: Bell },
     { href: "/quests", label: "Side Quests", icon: Zap },
+    { href: "/requests", label: "Requests", icon: Package },
   ];
 
   return (

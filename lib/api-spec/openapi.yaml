@@ -35,6 +35,8 @@ tags:
     description: Time-off request operations
   - name: side-quests
     description: Optional unscheduled tasks that crew can claim when unlocked by admin
+  - name: employee-requests
+    description: Employee requests for tools, equipment, and supplies
   - name: dashboard
     description: Dashboard summary operations
 paths:
@@ -1210,6 +1212,82 @@ paths:
                 items:
                   $ref: "#/components/schemas/Job"
 
+  /employee-requests:
+    get:
+      operationId: listEmployeeRequests
+      tags: [employee-requests]
+      summary: List employee requests (filter by crewId or status)
+      parameters:
+        - name: crewId
+          in: query
+          schema:
+            type: integer
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, fulfilled]
+      responses:
+        "200":
+          description: List of requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EmployeeRequest"
+    post:
+      operationId: createEmployeeRequest
+      tags: [employee-requests]
+      summary: Submit a new employee request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEmployeeRequestInput"
+      responses:
+        "201":
+          description: Created request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeRequest"
+
+  /employee-requests/{id}/fulfill:
+    patch:
+      operationId: fulfillEmployeeRequest
+      tags: [employee-requests]
+      summary: Mark a request as fulfilled
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Fulfilled request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EmployeeRequest"
+
+  /employee-requests/{id}:
+    delete:
+      operationId: deleteEmployeeRequest
+      tags: [employee-requests]
+      summary: Delete (remove) a request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /side-quests:
     get:
       operationId: listSideQuests
@@ -2097,6 +2175,74 @@ components:
         status:
           type: string
           enum: [needed, reserved, on_site, returned]
+
+    EmployeeRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+        crewId:
+          type: integer
+        category:
+          type: string
+          enum: [tool, equipment, supply, other]
+        title:
+          type: string
+        description:
+          type: string
+          nullable: true
+        quantity:
+          type: integer
+        priority:
+          type: string
+          enum: [low, normal, urgent]
+        status:
+          type: string
+          enum: [pending, fulfilled]
+        fulfilledAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        crew:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/CrewMember"
+      required:
+        - id
+        - crewId
+        - category
+        - title
+        - quantity
+        - priority
+        - status
+        - createdAt
+
+    CreateEmployeeRequestInput:
+      type: object
+      properties:
+        crewId:
+          type: integer
+        category:
+          type: string
+          enum: [tool, equipment, supply, other]
+          default: supply
+        title:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: integer
+          default: 1
+        priority:
+          type: string
+          enum: [low, normal, urgent]
+          default: normal
+      required:
+        - crewId
+        - title
 
     SideQuest:
       type: object

@@ -14,6 +14,7 @@ import notificationsRouter from "./notifications";
 import timeEntriesRouter from "./time-entries";
 import jobContactsRouter from "./job-contacts";
 import sideQuestsRouter from "./side-quests";
+import employeeRequestsRouter from "./employee-requests";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(photosRouter);
 router.use(equipmentRouter);
 router.use(dashboardRouter);
 router.use(sideQuestsRouter);
+router.use(employeeRequestsRouter);
 
 export default router;

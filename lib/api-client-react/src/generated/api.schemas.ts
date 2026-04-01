@@ -479,6 +479,75 @@ export interface UpdateEquipmentInput {
   status?: UpdateEquipmentInputStatus;
 }
 
+export type EmployeeRequestCategory =
+  (typeof EmployeeRequestCategory)[keyof typeof EmployeeRequestCategory];
+
+export const EmployeeRequestCategory = {
+  tool: "tool",
+  equipment: "equipment",
+  supply: "supply",
+  other: "other",
+} as const;
+
+export type EmployeeRequestPriority =
+  (typeof EmployeeRequestPriority)[keyof typeof EmployeeRequestPriority];
+
+export const EmployeeRequestPriority = {
+  low: "low",
+  normal: "normal",
+  urgent: "urgent",
+} as const;
+
+export type EmployeeRequestStatus =
+  (typeof EmployeeRequestStatus)[keyof typeof EmployeeRequestStatus];
+
+export const EmployeeRequestStatus = {
+  pending: "pending",
+  fulfilled: "fulfilled",
+} as const;
+
+export interface EmployeeRequest {
+  id: number;
+  crewId: number;
+  category: EmployeeRequestCategory;
+  title: string;
+  description?: string | null;
+  quantity: number;
+  priority: EmployeeRequestPriority;
+  status: EmployeeRequestStatus;
+  fulfilledAt?: string | null;
+  createdAt: string;
+  crew?: CrewMember | null;
+}
+
+export type CreateEmployeeRequestInputCategory =
+  (typeof CreateEmployeeRequestInputCategory)[keyof typeof CreateEmployeeRequestInputCategory];
+
+export const CreateEmployeeRequestInputCategory = {
+  tool: "tool",
+  equipment: "equipment",
+  supply: "supply",
+  other: "other",
+} as const;
+
+export type CreateEmployeeRequestInputPriority =
+  (typeof CreateEmployeeRequestInputPriority)[keyof typeof CreateEmployeeRequestInputPriority];
+
+export const CreateEmployeeRequestInputPriority = {
+  low: "low",
+  normal: "normal",
+  urgent: "urgent",
+} as const;
+
+export interface CreateEmployeeRequestInput {
+  crewId: number;
+  category?: CreateEmployeeRequestInputCategory;
+  title: string;
+  description?: string;
+  quantity?: number;
+  priority?: CreateEmployeeRequestInputPriority;
+}
+
 export type SideQuestPriority =
   (typeof SideQuestPriority)[keyof typeof SideQuestPriority];
 
@@ -573,3 +642,16 @@ export type MarkNotificationReadBody = {
 export type GetCrewUnreadCount200 = {
   unread: number;
 };
+
+export type ListEmployeeRequestsParams = {
+  crewId?: number;
+  status?: ListEmployeeRequestsStatus;
+};
+
+export type ListEmployeeRequestsStatus =
+  (typeof ListEmployeeRequestsStatus)[keyof typeof ListEmployeeRequestsStatus];
+
+export const ListEmployeeRequestsStatus = {
+  pending: "pending",
+  fulfilled: "fulfilled",
+} as const;

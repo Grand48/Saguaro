@@ -1083,6 +1083,99 @@ export const GetUpcomingJobsResponseItem = zod.object({
 export const GetUpcomingJobsResponse = zod.array(GetUpcomingJobsResponseItem);
 
 /**
+ * @summary List employee requests (filter by crewId or status)
+ */
+export const ListEmployeeRequestsQueryParams = zod.object({
+  crewId: zod.coerce.number().optional(),
+  status: zod.enum(["pending", "fulfilled"]).optional(),
+});
+
+export const ListEmployeeRequestsResponseItem = zod.object({
+  id: zod.number(),
+  crewId: zod.number(),
+  category: zod.enum(["tool", "equipment", "supply", "other"]),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  quantity: zod.number(),
+  priority: zod.enum(["low", "normal", "urgent"]),
+  status: zod.enum(["pending", "fulfilled"]),
+  fulfilledAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  crew: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      role: zod.string(),
+      phone: zod.string().nullish(),
+      email: zod.string().nullish(),
+      avatarUrl: zod.string().nullish(),
+      createdAt: zod.coerce.date(),
+    })
+    .nullish(),
+});
+export const ListEmployeeRequestsResponse = zod.array(
+  ListEmployeeRequestsResponseItem,
+);
+
+/**
+ * @summary Submit a new employee request
+ */
+export const createEmployeeRequestBodyCategoryDefault = `supply`;
+export const createEmployeeRequestBodyQuantityDefault = 1;
+export const createEmployeeRequestBodyPriorityDefault = `normal`;
+
+export const CreateEmployeeRequestBody = zod.object({
+  crewId: zod.number(),
+  category: zod
+    .enum(["tool", "equipment", "supply", "other"])
+    .default(createEmployeeRequestBodyCategoryDefault),
+  title: zod.string(),
+  description: zod.string().optional(),
+  quantity: zod.number().default(createEmployeeRequestBodyQuantityDefault),
+  priority: zod
+    .enum(["low", "normal", "urgent"])
+    .default(createEmployeeRequestBodyPriorityDefault),
+});
+
+/**
+ * @summary Mark a request as fulfilled
+ */
+export const FulfillEmployeeRequestParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const FulfillEmployeeRequestResponse = zod.object({
+  id: zod.number(),
+  crewId: zod.number(),
+  category: zod.enum(["tool", "equipment", "supply", "other"]),
+  title: zod.string(),
+  description: zod.string().nullish(),
+  quantity: zod.number(),
+  priority: zod.enum(["low", "normal", "urgent"]),
+  status: zod.enum(["pending", "fulfilled"]),
+  fulfilledAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  crew: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      role: zod.string(),
+      phone: zod.string().nullish(),
+      email: zod.string().nullish(),
+      avatarUrl: zod.string().nullish(),
+      createdAt: zod.coerce.date(),
+    })
+    .nullish(),
+});
+
+/**
+ * @summary Delete (remove) a request
+ */
+export const DeleteEmployeeRequestParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary List all side quests
  */
 export const ListSideQuestsResponseItem = zod.object({
