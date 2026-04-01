@@ -1529,7 +1529,51 @@ const TIME_LOG_COLS = [
 ];
 const QC_FIELDS: readonly { key: string; label: string; type: string }[] = [];
 
-type FormType = "job_completion" | "quality_control" | "custom";
+const SWP_GENERAL_FIELDS = [
+  { key: "monthly_safety_focus", label: "Monthly safety focus" },
+  { key: "emergency_job_number", label: "Emergency job number" },
+  { key: "date_and_shift", label: "Date and shift" },
+  { key: "competent_person", label: "Competent person" },
+  { key: "site_job_number", label: "Site and job number" },
+  { key: "immediate_work_area", label: "Immediate work area" },
+];
+const SWP_HAZARD_ITEMS = [
+  { key: "swp_confined_space", label: "Confined space" },
+  { key: "swp_working_at_heights", label: "Working at heights" },
+  { key: "swp_hazardous_substances", label: "Hazardous substances / chemicals" },
+  { key: "swp_mobile_equipment", label: "Mobile equipment" },
+  { key: "swp_slips_trips_falls", label: "Slips / trips / falls" },
+  { key: "swp_ladder_use", label: "Ladder use" },
+  { key: "swp_repetitive_motion", label: "Repetitive motion" },
+  { key: "swp_awkward_position", label: "Awkward position" },
+  { key: "swp_hand_power_tools", label: "Hand and power tools" },
+  { key: "swp_spotter_goals", label: "Spotter / goals" },
+  { key: "swp_lototo", label: "LOTOTO required" },
+  { key: "swp_ground_support", label: "Ground support" },
+  { key: "swp_lifting_operations", label: "Lifting operations" },
+  { key: "swp_rigging_capacity", label: "Rigging capacity" },
+  { key: "swp_lift_capacity", label: "Lift capacity" },
+  { key: "swp_signs_barricades", label: "Signs and barricades" },
+  { key: "swp_pinch_points", label: "Pinch points" },
+  { key: "swp_weather_related", label: "Weather related" },
+  { key: "swp_lighting", label: "Lighting / illumination" },
+  { key: "swp_ventilation", label: "Ventilation" },
+  { key: "swp_escapeways", label: "Escapeways / refuge chamber" },
+  { key: "swp_health_hazards", label: "Health hazards" },
+  { key: "swp_noise_exposure", label: "Noise exposure" },
+];
+const SWP_PERMIT_FIELDS = [
+  { key: "swp_respiratory", label: "Respiratory hazards (respirator required)?" },
+  { key: "swp_cut_gear", label: "Cut gear required?" },
+  { key: "swp_hot_work", label: "Hot work permit?" },
+  { key: "swp_heights_permit", label: "Working at heights permit?" },
+  { key: "swp_confined_space_permit", label: "Confined space permit?" },
+  { key: "swp_additional_permits", label: "Additional permits required?" },
+  { key: "swp_scaffolding", label: "Scaffolding required?" },
+];
+const SWP_HA_ROWS = 5;
+
+type FormType = "job_completion" | "quality_control" | "custom" | "safe_work_permit";
 type JobFormRecord = {
   id: number; jobId: number; formType: FormType; status: "draft" | "signed";
   fields?: string | null; signatureName?: string | null; signatureData?: string | null;
@@ -1541,6 +1585,7 @@ type JobFormRecord = {
 function buildFormSummaryText(form: JobFormRecord, jobName: string): string {
   const typeLabel = form.formType === "job_completion" ? "Job Completion Form"
     : form.formType === "quality_control" ? "Quality Control Checklist"
+    : form.formType === "safe_work_permit" ? "Safe Work Permit"
     : form.customFormName ?? "Uploaded Form";
   const parsed = form.fields ? JSON.parse(form.fields) as Record<string, string> : {};
   const lines = [
@@ -1575,6 +1620,31 @@ function buildFormSummaryText(form: JobFormRecord, jobName: string): string {
       const row = [String(min), ...TIME_LOG_COLS.map((c) => parsed[`tl_${min}_${c.key}`] ?? "")].join(" | ");
       lines.push(row);
     }
+  } else if (form.formType === "safe_work_permit") {
+    lines.push("--- GENERAL INFORMATION ---");
+    for (const f of SWP_GENERAL_FIELDS) {
+      if (parsed[f.key]) lines.push(`${f.label}: ${parsed[f.key]}`);
+    }
+    lines.push("", "--- HAZARDS IDENTIFIED ---");
+    if (parsed["swp_are_lifting"]) lines.push(`Lifting today: ${parsed["swp_are_lifting"] === "yes" ? "Yes" : "No"}`);
+    if (parsed["swp_lift_weight"]) lines.push(`Lift weight: ${parsed["swp_lift_weight"]} lbs`);
+    const checkedHazards = SWP_HAZARD_ITEMS.filter((h) => parsed[h.key] === "true").map((h) => h.label);
+    if (checkedHazards.length) lines.push("Active hazards: " + checkedHazards.join(", "));
+    lines.push("", "--- PERMITS & REQUIREMENTS ---");
+    for (const f of SWP_PERMIT_FIELDS) {
+      if (parsed[f.key]) lines.push(`${f.label} ${parsed[f.key] === "yes" ? "YES" : "NO"}`);
+    }
+    lines.push("", "--- HAZARD ANALYSIS ---");
+    for (let i = 0; i < SWP_HA_ROWS; i++) {
+      const area = parsed[`ha_area_${i}`]; const haz = parsed[`ha_hazards_${i}`]; const mit = parsed[`ha_mitigation_${i}`];
+      if (area || haz || mit) lines.push(`[${i + 1}] Area: ${area || "—"} | Hazards: ${haz || "—"} | Controls: ${mit || "—"}`);
+    }
+    lines.push("", "--- EMPLOYEE ACKNOWLEDGMENTS ---");
+    try {
+      const sigs: { name: string; date: string }[] = JSON.parse(parsed["employee_sigs"] ?? "[]");
+      if (sigs.length) { for (const s of sigs) lines.push(`${s.name} — ${s.date}`); }
+      else { lines.push("No employee acknowledgments yet."); }
+    } catch { lines.push("No employee acknowledgments yet."); }
   } else if (form.formType === "job_completion") {
     lines.push("--- Form Details ---");
     for (const fd of JOB_COMPLETION_FIELDS) {
@@ -1591,6 +1661,7 @@ function buildFormSummaryText(form: JobFormRecord, jobName: string): string {
 function buildEmailLink(form: JobFormRecord, jobName: string): string {
   const typeLabel = form.formType === "job_completion" ? "Job Completion Form"
     : form.formType === "quality_control" ? "Quality Control Checklist"
+    : form.formType === "safe_work_permit" ? "Safe Work Permit"
     : form.customFormName ?? "Uploaded Form";
   const subject = encodeURIComponent(`Signed: ${typeLabel} — ${jobName}`);
   const body = encodeURIComponent(buildFormSummaryText(form, jobName));
@@ -1607,9 +1678,12 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [empSigInput, setEmpSigInput] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: forms = [], isLoading } = useListJobForms(jobId);
+  const { data: forms = [], isLoading } = useListJobForms(jobId, { query: { refetchInterval: 30000 } });
+
+  const activeForm = (forms as JobFormRecord[]).find((f) => f.id === activeFormId);
 
   const { mutate: createForm, isPending: isCreating } = useCreateJobForm({
     mutation: {
@@ -1625,10 +1699,12 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
 
   const { mutate: submitForm, isPending: isSubmitting } = useSubmitJobForm({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         qc.invalidateQueries({ queryKey: getListJobFormsQueryKey(jobId) });
-        setView("list");
-        toast({ title: "Form signed and submitted" });
+        if ((variables as any)?.data?.signatureName) {
+          setView("list");
+          toast({ title: "Form signed and submitted" });
+        }
       },
     },
   });
@@ -1641,8 +1717,6 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
       },
     },
   });
-
-  const activeForm = (forms as JobFormRecord[]).find((f) => f.id === activeFormId);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1669,6 +1743,11 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
     e.target.value = "";
   }, [createForm, jobId, toast]);
 
+  const saveFieldsOnly = (vals: Record<string, string>) => {
+    if (!activeFormId) return;
+    submitForm({ id: jobId, formId: activeFormId, data: { fields: vals } });
+  };
+
   const handleSubmit = () => {
     if (!signerName.trim()) {
       toast({ title: "Please enter the signer's name", variant: "destructive" });
@@ -1694,6 +1773,7 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
           <h3 className="font-semibold text-base">
             {activeForm.formType === "job_completion" ? "Job Completion Form"
               : activeForm.formType === "quality_control" ? "Quality Control Checklist"
+              : activeForm.formType === "safe_work_permit" ? "Safe Work Permit"
               : activeForm.customFormName ?? "Uploaded Form"}
           </h3>
         </div>
@@ -1858,6 +1938,205 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
               </CardContent>
             </Card>
           </div>
+        ) : activeForm.formType === "safe_work_permit" ? (
+          <div className="space-y-6">
+            {/* General Information */}
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-primary" /> General Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {SWP_GENERAL_FIELDS.map((f) => (
+                    <div key={f.key} className="space-y-1.5">
+                      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{f.label}</label>
+                      <input
+                        className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        placeholder={f.label}
+                        value={formValues[f.key] ?? ""}
+                        onChange={(e) => setFormValues((prev) => ({ ...prev, [f.key]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Hazard Identification */}
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <ClipboardCheck className="h-4 w-4 text-primary" /> Hazard Identification
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <span className="text-sm font-medium">Are you lifting today?</span>
+                  {["yes", "no"].map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => setFormValues((prev) => ({ ...prev, swp_are_lifting: v }))}
+                      className={`px-4 py-1.5 rounded-md border text-sm font-medium transition-colors ${
+                        formValues["swp_are_lifting"] === v
+                          ? v === "yes" ? "bg-green-600 border-green-600 text-white" : "bg-red-500 border-red-500 text-white"
+                          : "border-border text-muted-foreground hover:bg-muted"
+                      }`}
+                    >{v === "yes" ? "✓ Yes" : "✗ No"}</button>
+                  ))}
+                  {formValues["swp_are_lifting"] === "yes" && (
+                    <input
+                      className="ml-2 px-3 py-1.5 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      placeholder="Weight of item (lbs)"
+                      value={formValues["swp_lift_weight"] ?? ""}
+                      onChange={(e) => setFormValues((prev) => ({ ...prev, swp_lift_weight: e.target.value }))}
+                    />
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Check all hazards that apply:</p>
+                <div className="grid grid-cols-2 gap-y-2 gap-x-6">
+                  {SWP_HAZARD_ITEMS.map((item) => {
+                    const checked = formValues[item.key] === "true";
+                    return (
+                      <label key={item.key} className="flex items-center gap-2 cursor-pointer text-sm">
+                        <div
+                          onClick={() => setFormValues((prev) => ({ ...prev, [item.key]: checked ? "false" : "true" }))}
+                          className={`h-5 w-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                            checked ? "bg-primary border-primary text-white" : "border-border hover:border-primary/50"
+                          }`}
+                        >
+                          {checked && <span className="text-xs font-bold">✓</span>}
+                        </div>
+                        <span className={checked ? "font-medium" : "text-muted-foreground"}>{item.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Additional Permits */}
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <PenLine className="h-4 w-4 text-primary" /> Additional Permits &amp; Requirements
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-3">
+                {SWP_PERMIT_FIELDS.map((f) => (
+                  <div key={f.key} className="flex items-center justify-between gap-4">
+                    <span className="text-sm">{f.label}</span>
+                    <div className="flex gap-2 flex-shrink-0">
+                      {["yes", "no"].map((v) => (
+                        <button
+                          key={v}
+                          onClick={() => setFormValues((prev) => ({ ...prev, [f.key]: v }))}
+                          className={`px-4 py-1 rounded-md border text-sm font-medium transition-colors ${
+                            formValues[f.key] === v
+                              ? v === "yes" ? "bg-green-600 border-green-600 text-white" : "bg-red-500 border-red-500 text-white"
+                              : "border-border text-muted-foreground hover:bg-muted"
+                          }`}
+                        >{v === "yes" ? "Yes" : "No"}</button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+
+            {/* Hazard Analysis Table */}
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <ClipboardCheck className="h-4 w-4 text-primary" /> Work Area Hazard Analysis
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <table className="w-full text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-muted/60">
+                      <th className="px-3 py-2 text-left border-b border-r border-border w-1/3">Work Area</th>
+                      <th className="px-3 py-2 text-left border-b border-r border-border w-1/3">Hazards Identified</th>
+                      <th className="px-3 py-2 text-left border-b border-border w-1/3">Mitigation / Controls</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: SWP_HA_ROWS }).map((_, i) => (
+                      <tr key={i} className={i % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                        {["ha_area", "ha_hazards", "ha_mitigation"].map((col) => (
+                          <td key={col} className="border-r last:border-r-0 border-border p-0.5">
+                            <input
+                              className="w-full px-2 py-1.5 text-xs bg-transparent focus:outline-none focus:bg-primary/5 focus:ring-1 focus:ring-primary/30 rounded"
+                              placeholder="—"
+                              value={formValues[`${col}_${i}`] ?? ""}
+                              onChange={(e) => setFormValues((prev) => ({ ...prev, [`${col}_${i}`]: e.target.value }))}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+
+            {/* Employee Acknowledgment */}
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <PenLine className="h-4 w-4 text-primary" /> Employee Acknowledgment
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <p className="text-xs text-muted-foreground">Each crew member must sign below to acknowledge they have been briefed on the hazards and controls.</p>
+                {(() => {
+                  const sigs: { name: string; date: string }[] = (() => {
+                    try { return JSON.parse(formValues["employee_sigs"] ?? "[]"); } catch { return []; }
+                  })();
+                  return (
+                    <div className="space-y-3">
+                      {sigs.length > 0 && (
+                        <div className="divide-y divide-border border border-border rounded-md overflow-hidden">
+                          {sigs.map((s, idx) => (
+                            <div key={idx} className="flex items-center justify-between px-4 py-2.5 bg-green-50/50">
+                              <span className="text-sm font-medium" style={{ fontFamily: "Georgia, serif", fontStyle: "italic" }}>{s.name}</span>
+                              <span className="text-xs text-muted-foreground">{s.date}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <input
+                          className="flex-1 px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                          placeholder="Your full name to acknowledge…"
+                          value={empSigInput}
+                          onChange={(e) => setEmpSigInput(e.target.value)}
+                        />
+                        <Button
+                          size="sm"
+                          disabled={!empSigInput.trim()}
+                          onClick={() => {
+                            const existing: { name: string; date: string }[] = (() => {
+                              try { return JSON.parse(formValues["employee_sigs"] ?? "[]"); } catch { return []; }
+                            })();
+                            const updated = [...existing, { name: empSigInput.trim(), date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) }];
+                            const newVals = { ...formValues, employee_sigs: JSON.stringify(updated) };
+                            setFormValues(newVals);
+                            saveFieldsOnly(newVals);
+                            setEmpSigInput("");
+                          }}
+                          className="gap-1.5 flex-shrink-0"
+                        >
+                          <PenLine className="h-3.5 w-3.5" /> Sign
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+          </div>
         ) : (
           <Card>
             <CardContent className="p-6 space-y-5">
@@ -1977,6 +2256,16 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
             QC Checklist
           </Button>
           <Button
+            variant="outline"
+            size="sm"
+            disabled={isCreating || isUploading}
+            onClick={() => createForm({ id: jobId, data: { formType: "safe_work_permit" } })}
+            className="gap-1.5"
+          >
+            <ClipboardCheck className="h-3.5 w-3.5" />
+            Safe Work Permit
+          </Button>
+          <Button
             size="sm"
             disabled={isCreating || isUploading}
             onClick={() => createForm({ id: jobId, data: { formType: "job_completion" } })}
@@ -1992,7 +2281,7 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
         <Card className="p-12 text-center">
           <PenLine className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
           <p className="font-medium mb-1">No forms yet</p>
-          <p className="text-sm text-muted-foreground">Upload your own form, or start a Job Completion / QC Checklist above.</p>
+          <p className="text-sm text-muted-foreground">Upload your own form, or start a Job Completion, QC Checklist, or Safe Work Permit above.</p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -2017,6 +2306,7 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
                         <p className="font-medium text-sm">
                           {form.formType === "job_completion" ? "Job Completion Form"
                             : form.formType === "quality_control" ? "Quality Control Checklist"
+                            : form.formType === "safe_work_permit" ? "Safe Work Permit"
                             : form.customFormName ?? "Uploaded Form"}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">

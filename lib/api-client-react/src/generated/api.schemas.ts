@@ -486,6 +486,7 @@ export const JobFormFormType = {
   job_completion: "job_completion",
   quality_control: "quality_control",
   custom: "custom",
+  safe_work_permit: "safe_work_permit",
 } as const;
 
 export type JobFormStatus = (typeof JobFormStatus)[keyof typeof JobFormStatus];
@@ -522,6 +523,7 @@ export const CreateJobFormInputFormType = {
   job_completion: "job_completion",
   quality_control: "quality_control",
   custom: "custom",
+  safe_work_permit: "safe_work_permit",
 } as const;
 
 export interface CreateJobFormInput {

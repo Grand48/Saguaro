@@ -68,6 +68,7 @@ artifacts-monorepo/
 - `messages` — id, job_id (FK→jobs), sender_name, content, photo_url, created_at
 - `photos` — id, job_id (FK→jobs), url (base64 data URL), caption, uploaded_by, created_at
 - `equipment` — id, job_id (FK→jobs), name, quantity, notes, status (needed/reserved/on_site/returned), created_at
+- `job_forms` — id, job_id (FK→jobs), form_type (job_completion|quality_control|custom|safe_work_permit), status (draft|signed), fields (JSON string), signature_name, signature_data, custom_form_name, custom_form_data, signed_at, created_at
 
 ## TypeScript & Composite Projects
 

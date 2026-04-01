@@ -2279,7 +2279,7 @@ components:
           type: integer
         formType:
           type: string
-          enum: [job_completion, quality_control, custom]
+          enum: [job_completion, quality_control, custom, safe_work_permit]
         status:
           type: string
           enum: [draft, signed]
@@ -2328,7 +2328,7 @@ components:
       properties:
         formType:
           type: string
-          enum: [job_completion, quality_control, custom]
+          enum: [job_completion, quality_control, custom, safe_work_permit]
         customFormName:
           type: string
           description: File name of uploaded form (required when formType is custom)

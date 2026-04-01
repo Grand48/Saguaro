@@ -116,9 +116,54 @@ const TIME_LOG_COLS = [
 ];
 const QC_FIELDS: readonly { key: string; label: string; type: string }[] = [];
 
+const SWP_GENERAL_FIELDS = [
+  { key: "monthly_safety_focus", label: "Monthly safety focus" },
+  { key: "emergency_job_number", label: "Emergency job number" },
+  { key: "date_and_shift", label: "Date and shift" },
+  { key: "competent_person", label: "Competent person" },
+  { key: "site_job_number", label: "Site and job number" },
+  { key: "immediate_work_area", label: "Immediate work area" },
+];
+const SWP_HAZARD_ITEMS = [
+  { key: "swp_confined_space", label: "Confined space" },
+  { key: "swp_working_at_heights", label: "Working at heights" },
+  { key: "swp_hazardous_substances", label: "Hazardous substances / chemicals" },
+  { key: "swp_mobile_equipment", label: "Mobile equipment" },
+  { key: "swp_slips_trips_falls", label: "Slips / trips / falls" },
+  { key: "swp_ladder_use", label: "Ladder use" },
+  { key: "swp_repetitive_motion", label: "Repetitive motion" },
+  { key: "swp_awkward_position", label: "Awkward position" },
+  { key: "swp_hand_power_tools", label: "Hand and power tools" },
+  { key: "swp_spotter_goals", label: "Spotter / goals" },
+  { key: "swp_lototo", label: "LOTOTO required" },
+  { key: "swp_ground_support", label: "Ground support" },
+  { key: "swp_lifting_operations", label: "Lifting operations" },
+  { key: "swp_rigging_capacity", label: "Rigging capacity" },
+  { key: "swp_lift_capacity", label: "Lift capacity" },
+  { key: "swp_signs_barricades", label: "Signs and barricades" },
+  { key: "swp_pinch_points", label: "Pinch points" },
+  { key: "swp_weather_related", label: "Weather related" },
+  { key: "swp_lighting", label: "Lighting / illumination" },
+  { key: "swp_ventilation", label: "Ventilation" },
+  { key: "swp_escapeways", label: "Escapeways / refuge chamber" },
+  { key: "swp_health_hazards", label: "Health hazards" },
+  { key: "swp_noise_exposure", label: "Noise exposure" },
+];
+const SWP_PERMIT_FIELDS = [
+  { key: "swp_respiratory", label: "Respiratory hazards (respirator required)?" },
+  { key: "swp_cut_gear", label: "Cut gear required?" },
+  { key: "swp_hot_work", label: "Hot work permit?" },
+  { key: "swp_heights_permit", label: "Working at heights permit?" },
+  { key: "swp_confined_space_permit", label: "Confined space permit?" },
+  { key: "swp_additional_permits", label: "Additional permits required?" },
+  { key: "swp_scaffolding", label: "Scaffolding required?" },
+];
+const SWP_HA_ROWS = 5;
+
 function buildMobileFormSummary(form: any, jobName: string): string {
   const typeLabel = form.formType === "job_completion" ? "Job Completion Form"
     : form.formType === "quality_control" ? "Quality Control Checklist"
+    : form.formType === "safe_work_permit" ? "Safe Work Permit"
     : form.customFormName ?? "Uploaded Form";
   const parsed = form.fields ? JSON.parse(form.fields) as Record<string, string> : {};
   const lines = [
@@ -152,6 +197,31 @@ function buildMobileFormSummary(form: any, jobName: string): string {
       const row = [String(min), ...TIME_LOG_COLS.map((c) => parsed[`tl_${min}_${c.key}`] ?? "")].join(" | ");
       lines.push(row);
     }
+  } else if (form.formType === "safe_work_permit") {
+    lines.push("--- GENERAL INFORMATION ---");
+    for (const f of SWP_GENERAL_FIELDS) {
+      if (parsed[f.key]) lines.push(`${f.label}: ${parsed[f.key]}`);
+    }
+    lines.push("", "--- HAZARDS IDENTIFIED ---");
+    if (parsed["swp_are_lifting"]) lines.push(`Lifting today: ${parsed["swp_are_lifting"] === "yes" ? "Yes" : "No"}`);
+    if (parsed["swp_lift_weight"]) lines.push(`Lift weight: ${parsed["swp_lift_weight"]} lbs`);
+    const checkedHazards = SWP_HAZARD_ITEMS.filter((h) => parsed[h.key] === "true").map((h) => h.label);
+    if (checkedHazards.length) lines.push("Active hazards: " + checkedHazards.join(", "));
+    lines.push("", "--- PERMITS & REQUIREMENTS ---");
+    for (const f of SWP_PERMIT_FIELDS) {
+      if (parsed[f.key]) lines.push(`${f.label} ${parsed[f.key] === "yes" ? "YES" : "NO"}`);
+    }
+    lines.push("", "--- HAZARD ANALYSIS ---");
+    for (let i = 0; i < SWP_HA_ROWS; i++) {
+      const area = parsed[`ha_area_${i}`]; const haz = parsed[`ha_hazards_${i}`]; const mit = parsed[`ha_mitigation_${i}`];
+      if (area || haz || mit) lines.push(`[${i+1}] ${area || "—"} | ${haz || "—"} | ${mit || "—"}`);
+    }
+    lines.push("", "--- EMPLOYEE ACKNOWLEDGMENTS ---");
+    try {
+      const sigs: { name: string; date: string }[] = JSON.parse(parsed["employee_sigs"] ?? "[]");
+      if (sigs.length) { for (const s of sigs) lines.push(`${s.name} — ${s.date}`); }
+      else lines.push("No acknowledgments yet.");
+    } catch { lines.push("No acknowledgments yet."); }
   } else if (form.formType === "job_completion") {
     lines.push("--- Form Details ---");
     for (const fd of JOB_COMPLETION_FIELDS) {
@@ -208,6 +278,7 @@ export default function JobDetailScreen() {
   const [formView, setFormView] = useState<"list" | "fill" | "sign">("list");
   const [activeFormId, setActiveFormId] = useState<number | null>(null);
   const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [empSigInput, setEmpSigInput] = useState("");
   const [signerName, setSignerName] = useState("");
   const [sigPaths, setSigPaths] = useState<string[]>([]);
   const [sigEmpty, setSigEmpty] = useState(true);
@@ -226,7 +297,7 @@ export default function JobDetailScreen() {
     query: { enabled: !!jobId && activeTab === "Photos" }
   });
   const sendMessage = useSendMessage();
-  const { data: forms = [] } = useListJobForms(jobId, { query: { enabled: !!jobId && activeTab === "Forms" } });
+  const { data: forms = [] } = useListJobForms(jobId, { query: { enabled: !!jobId && activeTab === "Forms", refetchInterval: 30000 } });
   const { mutate: createForm, isPending: isCreatingForm } = useCreateJobForm({
     mutation: {
       onSuccess: (form: any) => {
@@ -239,12 +310,14 @@ export default function JobDetailScreen() {
   });
   const { mutate: submitForm, isPending: isSubmittingForm } = useSubmitJobForm({
     mutation: {
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         qc.invalidateQueries({ queryKey: getListJobFormsQueryKey(jobId) });
-        setFormView("list");
-        setSigPaths([]);
-        setSigEmpty(true);
-        setSignerName("");
+        if ((variables as any)?.data?.signatureName) {
+          setFormView("list");
+          setSigPaths([]);
+          setSigEmpty(true);
+          setSignerName("");
+        }
       },
     },
   });
@@ -586,6 +659,14 @@ export default function JobDetailScreen() {
                   <Ionicons name="checkmark-circle-outline" size={16} color={colors.primary} />
                   <Text style={[s.formCreateBtnText, { color: colors.primary }]}>QC Checklist</Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.formCreateBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => createForm({ id: jobId, data: { formType: "safe_work_permit" } })}
+                  disabled={isCreatingForm}
+                >
+                  <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
+                  <Text style={[s.formCreateBtnText, { color: colors.primary }]}>Safe Work Permit</Text>
+                </TouchableOpacity>
               </View>
               {(forms as any[]).length === 0 ? (
                 <EmptyState icon="document-outline" text="No forms yet — create one above" colors={colors} />
@@ -606,6 +687,7 @@ export default function JobDetailScreen() {
                           <Text style={[s.formTitle, { color: colors.foreground }]}>
                             {form.formType === "job_completion" ? "Job Completion Form"
                               : form.formType === "quality_control" ? "QC Checklist"
+                              : form.formType === "safe_work_permit" ? "Safe Work Permit"
                               : form.customFormName ?? "Uploaded Form"}
                           </Text>
                           <Text style={[s.formSubtitle, { color: colors.mutedForeground }]}>
@@ -628,6 +710,7 @@ export default function JobDetailScreen() {
                             onPress={async () => {
                               const typeLabel = form.formType === "job_completion" ? "Job Completion Form"
                                 : form.formType === "quality_control" ? "Quality Control Checklist"
+                                : form.formType === "safe_work_permit" ? "Safe Work Permit"
                                 : form.customFormName ?? "Uploaded Form";
                               await Share.share({
                                 title: `Signed: ${typeLabel}`,
@@ -662,6 +745,7 @@ export default function JobDetailScreen() {
               <Text style={{ fontSize: 16, fontFamily: "Inter_700Bold", color: colors.foreground }}>
                 {activeFormRecord.formType === "job_completion" ? "Job Completion Form"
                   : activeFormRecord.formType === "quality_control" ? "QC Checklist"
+                  : activeFormRecord.formType === "safe_work_permit" ? "Safe Work Permit"
                   : activeFormRecord.customFormName ?? "Uploaded Form"}
               </Text>
 
@@ -878,6 +962,172 @@ export default function JobDetailScreen() {
                   )}
                 </View>
               ))}
+
+              {activeFormRecord.formType === "safe_work_permit" && (
+                <>
+                  {/* General Information */}
+                  <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginBottom: 10 }}>General Information</Text>
+                    {SWP_GENERAL_FIELDS.map((f) => (
+                      <View key={f.key} style={{ marginBottom: 10 }}>
+                        <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: colors.mutedForeground, marginBottom: 4 }}>{f.label}</Text>
+                        <TextInput
+                          style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
+                          value={formValues[f.key] ?? ""}
+                          onChangeText={(v) => setFormValues((prev) => ({ ...prev, [f.key]: v }))}
+                          placeholder={f.label}
+                          placeholderTextColor={colors.mutedForeground}
+                        />
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Hazard Identification */}
+                  <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginBottom: 10 }}>Hazard Identification</Text>
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: colors.mutedForeground, marginBottom: 6 }}>Are you lifting today?</Text>
+                    <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
+                      {["yes", "no"].map((v) => (
+                        <TouchableOpacity
+                          key={v}
+                          onPress={() => setFormValues((prev) => ({ ...prev, swp_are_lifting: v }))}
+                          style={{ flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: "center", borderWidth: 1.5,
+                            backgroundColor: formValues["swp_are_lifting"] === v ? (v === "yes" ? "#16a34a" : "#ef4444") : colors.background,
+                            borderColor: formValues["swp_are_lifting"] === v ? (v === "yes" ? "#16a34a" : "#ef4444") : colors.border }}
+                        >
+                          <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: formValues["swp_are_lifting"] === v ? "#fff" : colors.mutedForeground }}>
+                            {v === "yes" ? "✓ Yes" : "✗ No"}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    {formValues["swp_are_lifting"] === "yes" && (
+                      <TextInput
+                        style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, marginBottom: 12 }]}
+                        value={formValues["swp_lift_weight"] ?? ""}
+                        onChangeText={(v) => setFormValues((prev) => ({ ...prev, swp_lift_weight: v }))}
+                        placeholder="Weight of item (lbs)"
+                        placeholderTextColor={colors.mutedForeground}
+                        keyboardType="numeric"
+                      />
+                    )}
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: colors.mutedForeground, marginBottom: 8 }}>Check all hazards that apply:</Text>
+                    {SWP_HAZARD_ITEMS.map((item) => {
+                      const checked = formValues[item.key] === "true";
+                      return (
+                        <TouchableOpacity
+                          key={item.key}
+                          onPress={() => setFormValues((prev) => ({ ...prev, [item.key]: checked ? "false" : "true" }))}
+                          style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 7, borderBottomWidth: 1, borderBottomColor: colors.border + "40" }}
+                        >
+                          <View style={{ width: 22, height: 22, borderRadius: 5, borderWidth: 2, alignItems: "center", justifyContent: "center",
+                            borderColor: checked ? colors.primary : colors.border, backgroundColor: checked ? colors.primary : "transparent" }}>
+                            {checked && <Ionicons name="checkmark" size={13} color="#fff" />}
+                          </View>
+                          <Text style={{ fontSize: 13, fontFamily: checked ? "Inter_600SemiBold" : "Inter_400Regular", color: checked ? colors.foreground : colors.mutedForeground, flex: 1 }}>
+                            {item.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {/* Permits */}
+                  <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginBottom: 10 }}>Additional Permits & Requirements</Text>
+                    {SWP_PERMIT_FIELDS.map((f) => (
+                      <View key={f.key} style={{ marginBottom: 12 }}>
+                        <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: colors.foreground, marginBottom: 6 }}>{f.label}</Text>
+                        <View style={{ flexDirection: "row", gap: 8 }}>
+                          {["yes", "no"].map((v) => (
+                            <TouchableOpacity
+                              key={v}
+                              onPress={() => setFormValues((prev) => ({ ...prev, [f.key]: v }))}
+                              style={{ flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: "center", borderWidth: 1.5,
+                                backgroundColor: formValues[f.key] === v ? (v === "yes" ? "#16a34a" : "#ef4444") : colors.background,
+                                borderColor: formValues[f.key] === v ? (v === "yes" ? "#16a34a" : "#ef4444") : colors.border }}
+                            >
+                              <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: formValues[f.key] === v ? "#fff" : colors.mutedForeground }}>
+                                {v === "yes" ? "Yes" : "No"}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Hazard Analysis Table */}
+                  <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginBottom: 10 }}>Work Area Hazard Analysis</Text>
+                    {Array.from({ length: SWP_HA_ROWS }).map((_, i) => (
+                      <View key={i} style={{ marginBottom: 14 }}>
+                        <Text style={{ fontSize: 11, fontFamily: "Inter_600SemiBold", color: colors.mutedForeground, marginBottom: 4 }}>Row {i + 1}</Text>
+                        {(["ha_area", "ha_hazards", "ha_mitigation"] as const).map((col, ci) => (
+                          <TextInput
+                            key={col}
+                            style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, marginBottom: ci < 2 ? 4 : 0 }]}
+                            value={formValues[`${col}_${i}`] ?? ""}
+                            onChangeText={(v) => setFormValues((prev) => ({ ...prev, [`${col}_${i}`]: v }))}
+                            placeholder={col === "ha_area" ? "Work area" : col === "ha_hazards" ? "Hazards identified" : "Mitigation / controls"}
+                            placeholderTextColor={colors.mutedForeground}
+                          />
+                        ))}
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Employee Acknowledgment */}
+                  <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginBottom: 6 }}>Employee Acknowledgment</Text>
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginBottom: 12 }}>
+                      Each crew member must sign to acknowledge they have been briefed on hazards.
+                    </Text>
+                    {(() => {
+                      const sigs: { name: string; date: string }[] = (() => {
+                        try { return JSON.parse(formValues["employee_sigs"] ?? "[]"); } catch { return []; }
+                      })();
+                      return (
+                        <>
+                          {sigs.map((sig, idx) => (
+                            <View key={idx} style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.border + "40", marginBottom: 2 }}>
+                              <Text style={{ fontSize: 14, fontFamily: "Inter_600SemiBold", color: "#16a34a", fontStyle: "italic" }}>{sig.name}</Text>
+                              <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{sig.date}</Text>
+                            </View>
+                          ))}
+                          <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+                            <TextInput
+                              style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, flex: 1 }]}
+                              value={empSigInput}
+                              onChangeText={setEmpSigInput}
+                              placeholder="Your full name to acknowledge…"
+                              placeholderTextColor={colors.mutedForeground}
+                            />
+                            <TouchableOpacity
+                              style={{ backgroundColor: empSigInput.trim() ? colors.primary : colors.muted, paddingHorizontal: 16, borderRadius: 10, justifyContent: "center" }}
+                              disabled={!empSigInput.trim()}
+                              onPress={() => {
+                                const existing: { name: string; date: string }[] = (() => {
+                                  try { return JSON.parse(formValues["employee_sigs"] ?? "[]"); } catch { return []; }
+                                })();
+                                const updated = [...existing, { name: empSigInput.trim(), date: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) }];
+                                const newVals = { ...formValues, employee_sigs: JSON.stringify(updated) };
+                                setFormValues(newVals);
+                                if (activeFormId) {
+                                  submitForm({ id: jobId, formId: activeFormId, data: { fields: newVals } });
+                                }
+                                setEmpSigInput("");
+                              }}
+                            >
+                              <Ionicons name="pencil-outline" size={16} color={empSigInput.trim() ? "#fff" : colors.mutedForeground} />
+                            </TouchableOpacity>
+                          </View>
+                        </>
+                      );
+                    })()}
+                  </View>
+                </>
+              )}
 
               <TouchableOpacity
                 style={[s.formCreateBtn, { backgroundColor: colors.primary, borderColor: colors.primary, flex: 0 }]}

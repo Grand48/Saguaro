@@ -27,7 +27,7 @@ router.post("/jobs/:id/forms", async (req, res) => {
   try {
     const jobId = Number(req.params.id);
     const schema = z.object({
-      formType: z.enum(["job_completion", "quality_control", "custom"]),
+      formType: z.enum(["job_completion", "quality_control", "custom", "safe_work_permit"]),
       customFormName: z.string().optional(),
       customFormData: z.string().optional(),
     });

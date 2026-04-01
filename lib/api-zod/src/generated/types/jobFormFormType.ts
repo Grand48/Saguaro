@@ -13,4 +13,5 @@ export const JobFormFormType = {
   job_completion: "job_completion",
   quality_control: "quality_control",
   custom: "custom",
+  safe_work_permit: "safe_work_permit",
 } as const;
