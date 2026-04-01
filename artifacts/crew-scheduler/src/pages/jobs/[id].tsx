@@ -12,10 +12,13 @@ import {
   useSendMessage,
   useListJobPhotos, getListJobPhotosQueryKey,
   useUploadPhoto,
-  useListCrew, getListCrewQueryKey,
-  useGetJobCrew, getGetJobCrewQueryKey,
+  useListCrew,
   useAssignCrewToJob,
   useRemoveCrewFromJob,
+  useListJobEquipment, getListJobEquipmentQueryKey,
+  useCreateEquipment,
+  useUpdateEquipment,
+  useDeleteEquipment,
   getGetUpcomingJobsQueryKey,
   getGetDashboardSummaryQueryKey
 } from "@workspace/api-client-react";
@@ -41,7 +44,7 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { 
   MapPin, Calendar as CalendarIcon, FileText, CheckSquare, 
-  MessageSquare, Camera, Users, Plus, Trash2, Send, Paperclip, X
+  MessageSquare, Camera, Users, Plus, Trash2, Send, Paperclip, X, Wrench, Package
 } from "lucide-react";
 
 export default function JobDetail() {
@@ -102,12 +105,13 @@ export default function JobDetail() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid grid-cols-5 w-full md:w-auto h-auto p-1 bg-muted/50 rounded-md">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><FileText className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">Overview</span></TabsTrigger>
-          <TabsTrigger value="crew" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Users className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">Crew</span></TabsTrigger>
-          <TabsTrigger value="tasks" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><CheckSquare className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">Tasks</span></TabsTrigger>
-          <TabsTrigger value="chat" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><MessageSquare className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">Chat</span></TabsTrigger>
-          <TabsTrigger value="photos" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Camera className="h-4 w-4 mr-2" /> <span className="hidden sm:inline">Photos</span></TabsTrigger>
+        <TabsList className="grid grid-cols-6 w-full h-auto p-1 bg-muted/50 rounded-md">
+          <TabsTrigger value="overview" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><FileText className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Overview</span></TabsTrigger>
+          <TabsTrigger value="crew" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Users className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Crew</span></TabsTrigger>
+          <TabsTrigger value="tasks" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><CheckSquare className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Tasks</span></TabsTrigger>
+          <TabsTrigger value="equipment" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Wrench className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Equipment</span></TabsTrigger>
+          <TabsTrigger value="chat" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><MessageSquare className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Chat</span></TabsTrigger>
+          <TabsTrigger value="photos" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Camera className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Photos</span></TabsTrigger>
         </TabsList>
         
         <div className="mt-6">
@@ -139,6 +143,10 @@ export default function JobDetail() {
 
           <TabsContent value="tasks" className="outline-none focus-visible:ring-0">
             <JobTasksTab jobId={jobId} crew={job.crew} />
+          </TabsContent>
+
+          <TabsContent value="equipment" className="outline-none focus-visible:ring-0">
+            <JobEquipmentTab jobId={jobId} />
           </TabsContent>
 
           <TabsContent value="chat" className="outline-none focus-visible:ring-0">
@@ -919,5 +927,227 @@ function JobPhotosTab({ jobId }: { jobId: number }) {
         </div>
       )}
     </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// EQUIPMENT TAB
+// -----------------------------------------------------------------------------
+
+const EQUIPMENT_STATUSES = [
+  { value: "needed", label: "Needed", color: "bg-amber-100 text-amber-800 border-amber-200" },
+  { value: "reserved", label: "Reserved", color: "bg-blue-100 text-blue-800 border-blue-200" },
+  { value: "on_site", label: "On Site", color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
+  { value: "returned", label: "Returned", color: "bg-slate-100 text-slate-700 border-slate-200" },
+];
+
+function EquipmentStatusBadge({ status }: { status: string }) {
+  const s = EQUIPMENT_STATUSES.find(x => x.value === status);
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${s?.color ?? "bg-muted text-muted-foreground border-border"}`}>
+      {s?.label ?? status}
+    </span>
+  );
+}
+
+function JobEquipmentTab({ jobId }: { jobId: number }) {
+  const { data: items, isLoading } = useListJobEquipment(jobId, {
+    query: { enabled: !!jobId, queryKey: getListJobEquipmentQueryKey(jobId) }
+  });
+  const queryClient = useQueryClient();
+  const updateEquipment = useUpdateEquipment();
+  const deleteEquipmentItem = useDeleteEquipment();
+  const { toast } = useToast();
+
+  const handleStatusChange = (itemId: number, newStatus: string) => {
+    updateEquipment.mutate({ id: itemId, data: { status: newStatus as any } }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListJobEquipmentQueryKey(jobId) });
+      },
+      onError: () => toast({ title: "Error", description: "Failed to update status.", variant: "destructive" }),
+    });
+  };
+
+  const handleDelete = (itemId: number) => {
+    deleteEquipmentItem.mutate({ id: itemId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListJobEquipmentQueryKey(jobId) });
+        toast({ title: "Removed", description: "Equipment item removed." });
+      },
+    });
+  };
+
+  const needed = items?.filter(i => i.status === "needed") || [];
+  const onSite = items?.filter(i => i.status === "on_site") || [];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center bg-card p-4 rounded-lg border border-border shadow-sm">
+        <div>
+          <h3 className="font-semibold flex items-center gap-2">
+            <Package className="h-4 w-4 text-primary" />
+            Equipment Requirements
+          </h3>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {items?.length ?? 0} item{(items?.length ?? 0) !== 1 ? "s" : ""} — {needed.length} needed, {onSite.length} on site
+          </p>
+        </div>
+        <AddEquipmentDialog jobId={jobId} />
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+        </div>
+      ) : !items || items.length === 0 ? (
+        <div className="p-16 text-center text-muted-foreground border border-dashed border-border rounded-lg bg-card/50">
+          <Wrench className="h-10 w-10 mx-auto mb-3 opacity-30" />
+          <p className="text-lg font-medium text-foreground mb-1">No equipment listed</p>
+          <p className="text-sm">Add tools, machinery, or materials needed for this job.</p>
+        </div>
+      ) : (
+        <Card className="border-border shadow-sm">
+          <div className="divide-y divide-border">
+            {items.map((item) => (
+              <div key={item.id} className="flex items-center gap-4 p-4 group hover:bg-muted/30 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-sm">{item.name}</span>
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                      Qty: {item.quantity}
+                    </span>
+                    <EquipmentStatusBadge status={item.status} />
+                  </div>
+                  {item.notes && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{item.notes}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Select value={item.status} onValueChange={(val) => handleStatusChange(item.id, val)}>
+                    <SelectTrigger className="h-8 w-[110px] text-xs border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EQUIPMENT_STATUSES.map(s => (
+                        <SelectItem key={s.value} value={s.value} className="text-xs">{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(item.id)}
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+const addEquipmentSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  quantity: z.coerce.number().int().min(1, "At least 1").default(1),
+  notes: z.string().optional(),
+  status: z.enum(["needed", "reserved", "on_site", "returned"]).default("needed"),
+});
+
+function AddEquipmentDialog({ jobId }: { jobId: number }) {
+  const [open, setOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const createEquipment = useCreateEquipment();
+
+  const form = useForm<z.infer<typeof addEquipmentSchema>>({
+    resolver: zodResolver(addEquipmentSchema),
+    defaultValues: { name: "", quantity: 1, notes: "", status: "needed" },
+  });
+
+  const onSubmit = (values: z.infer<typeof addEquipmentSchema>) => {
+    createEquipment.mutate({
+      id: jobId,
+      data: {
+        name: values.name,
+        quantity: values.quantity,
+        notes: values.notes || undefined,
+        status: values.status,
+      } as any,
+    }, {
+      onSuccess: () => {
+        toast({ title: "Equipment Added", description: `${values.name} added to the list.` });
+        queryClient.invalidateQueries({ queryKey: getListJobEquipmentQueryKey(jobId) });
+        form.reset({ name: "", quantity: 1, notes: "", status: "needed" });
+        setOpen(false);
+      },
+      onError: () => toast({ title: "Error", description: "Failed to add equipment.", variant: "destructive" }),
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button size="sm" className="font-semibold shadow-sm">
+          <Plus className="h-4 w-4 mr-2" /> Add Equipment
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Add Equipment Requirement</DialogTitle>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField control={form.control} name="name" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Equipment Name</FormLabel>
+                <FormControl><Input placeholder="e.g. Scaffold Tower, Jackhammer, PPE Kit" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="grid grid-cols-2 gap-4">
+              <FormField control={form.control} name="quantity" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Quantity</FormLabel>
+                  <FormControl><Input type="number" min={1} {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField control={form.control} name="status" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Status</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {EQUIPMENT_STATUSES.map(s => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+            </div>
+            <FormField control={form.control} name="notes" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                <FormControl><Textarea className="h-16 resize-none" placeholder="Rental source, specs, or special instructions" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <div className="pt-2 flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={createEquipment.isPending}>
+                {createEquipment.isPending ? "Adding..." : "Add Equipment"}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
   );
 }

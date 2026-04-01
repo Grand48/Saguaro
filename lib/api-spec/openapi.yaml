@@ -19,6 +19,8 @@ tags:
     description: Group messaging operations
   - name: photos
     description: Photo sharing operations
+  - name: equipment
+    description: Job equipment requirement operations
   - name: dashboard
     description: Dashboard summary operations
 paths:
@@ -492,6 +494,89 @@ paths:
         "204":
           description: Deleted
 
+  # ─── EQUIPMENT ───────────────────────────────────────────────────────────────
+  /jobs/{id}/equipment:
+    get:
+      operationId: listJobEquipment
+      tags: [equipment]
+      summary: List equipment requirements for a job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of equipment items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Equipment"
+    post:
+      operationId: createEquipment
+      tags: [equipment]
+      summary: Add an equipment requirement to a job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEquipmentInput"
+      responses:
+        "201":
+          description: Created equipment item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipment"
+
+  /equipment/{id}:
+    put:
+      operationId: updateEquipment
+      tags: [equipment]
+      summary: Update an equipment item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateEquipmentInput"
+      responses:
+        "200":
+          description: Updated equipment item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipment"
+    delete:
+      operationId: deleteEquipment
+      tags: [equipment]
+      summary: Delete an equipment item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   # ─── DASHBOARD ───────────────────────────────────────────────────────────────
   /dashboard/summary:
     get:
@@ -843,6 +928,66 @@ components:
       required:
         - url
         - uploadedBy
+
+    Equipment:
+      type: object
+      properties:
+        id:
+          type: integer
+        jobId:
+          type: integer
+        name:
+          type: string
+        quantity:
+          type: integer
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [needed, reserved, on_site, returned]
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - jobId
+        - name
+        - quantity
+        - status
+        - createdAt
+
+    CreateEquipmentInput:
+      type: object
+      properties:
+        name:
+          type: string
+        quantity:
+          type: integer
+          default: 1
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [needed, reserved, on_site, returned]
+          default: needed
+      required:
+        - name
+
+    UpdateEquipmentInput:
+      type: object
+      properties:
+        name:
+          type: string
+        quantity:
+          type: integer
+        notes:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [needed, reserved, on_site, returned]
 
     DashboardSummary:
       type: object

@@ -23,7 +23,7 @@ Full-stack field operations management app. Workers can book/schedule jobs, assi
 ### Pages / Routes
 - `/` — Dashboard: summary stats (active jobs, crew count, pending tasks, completed jobs), upcoming schedule, task completion chart
 - `/jobs` — Jobs list with status badges and date ranges; "New Job" dialog
-- `/jobs/:id` — Job detail with 5 tabs: Overview, Crew, Tasks, Chat, Photos
+- `/jobs/:id` — Job detail with 6 tabs: Overview, Crew, Tasks, Equipment, Chat, Photos
 - `/crew` — Crew member cards with avatar/role/contact
 - `/crew/:id` — Crew member detail
 
@@ -64,6 +64,7 @@ artifacts-monorepo/
 - `tasks` — id, job_id (FK→jobs), title, description, status (pending/in_progress/completed), assigned_to_id (FK→crew_members), created_at
 - `messages` — id, job_id (FK→jobs), sender_name, content, photo_url, created_at
 - `photos` — id, job_id (FK→jobs), url (base64 data URL), caption, uploaded_by, created_at
+- `equipment` — id, job_id (FK→jobs), name, quantity, notes, status (needed/reserved/on_site/returned), created_at
 
 ## TypeScript & Composite Projects
 

@@ -410,6 +410,74 @@ export const DeletePhotoParams = zod.object({
 });
 
 /**
+ * @summary List equipment requirements for a job
+ */
+export const ListJobEquipmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListJobEquipmentResponseItem = zod.object({
+  id: zod.number(),
+  jobId: zod.number(),
+  name: zod.string(),
+  quantity: zod.number(),
+  notes: zod.string().nullish(),
+  status: zod.enum(["needed", "reserved", "on_site", "returned"]),
+  createdAt: zod.coerce.date(),
+});
+export const ListJobEquipmentResponse = zod.array(ListJobEquipmentResponseItem);
+
+/**
+ * @summary Add an equipment requirement to a job
+ */
+export const CreateEquipmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const createEquipmentBodyQuantityDefault = 1;
+export const createEquipmentBodyStatusDefault = `needed`;
+
+export const CreateEquipmentBody = zod.object({
+  name: zod.string(),
+  quantity: zod.number().default(createEquipmentBodyQuantityDefault),
+  notes: zod.string().nullish(),
+  status: zod
+    .enum(["needed", "reserved", "on_site", "returned"])
+    .default(createEquipmentBodyStatusDefault),
+});
+
+/**
+ * @summary Update an equipment item
+ */
+export const UpdateEquipmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateEquipmentBody = zod.object({
+  name: zod.string().optional(),
+  quantity: zod.number().optional(),
+  notes: zod.string().nullish(),
+  status: zod.enum(["needed", "reserved", "on_site", "returned"]).optional(),
+});
+
+export const UpdateEquipmentResponse = zod.object({
+  id: zod.number(),
+  jobId: zod.number(),
+  name: zod.string(),
+  quantity: zod.number(),
+  notes: zod.string().nullish(),
+  status: zod.enum(["needed", "reserved", "on_site", "returned"]),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete an equipment item
+ */
+export const DeleteEquipmentParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary Get dashboard summary stats
  */
 export const GetDashboardSummaryResponse = zod.object({

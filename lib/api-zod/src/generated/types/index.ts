@@ -8,12 +8,16 @@
 
 export * from "./assignCrewInput";
 export * from "./createCrewMemberInput";
+export * from "./createEquipmentInput";
+export * from "./createEquipmentInputStatus";
 export * from "./createJobInput";
 export * from "./createJobInputStatus";
 export * from "./createTaskInput";
 export * from "./createTaskInputStatus";
 export * from "./crewMember";
 export * from "./dashboardSummary";
+export * from "./equipment";
+export * from "./equipmentStatus";
 export * from "./errorResponse";
 export * from "./healthStatus";
 export * from "./job";
@@ -25,6 +29,8 @@ export * from "./photo";
 export * from "./sendMessageInput";
 export * from "./task";
 export * from "./taskStatus";
+export * from "./updateEquipmentInput";
+export * from "./updateEquipmentInputStatus";
 export * from "./updateTaskInput";
 export * from "./updateTaskInputStatus";
 export * from "./uploadPhotoInput";

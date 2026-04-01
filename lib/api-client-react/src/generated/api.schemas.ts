@@ -180,6 +180,60 @@ export interface UploadPhotoInput {
   uploadedBy: string;
 }
 
+export type EquipmentStatus =
+  (typeof EquipmentStatus)[keyof typeof EquipmentStatus];
+
+export const EquipmentStatus = {
+  needed: "needed",
+  reserved: "reserved",
+  on_site: "on_site",
+  returned: "returned",
+} as const;
+
+export interface Equipment {
+  id: number;
+  jobId: number;
+  name: string;
+  quantity: number;
+  notes?: string | null;
+  status: EquipmentStatus;
+  createdAt: string;
+}
+
+export type CreateEquipmentInputStatus =
+  (typeof CreateEquipmentInputStatus)[keyof typeof CreateEquipmentInputStatus];
+
+export const CreateEquipmentInputStatus = {
+  needed: "needed",
+  reserved: "reserved",
+  on_site: "on_site",
+  returned: "returned",
+} as const;
+
+export interface CreateEquipmentInput {
+  name: string;
+  quantity?: number;
+  notes?: string | null;
+  status?: CreateEquipmentInputStatus;
+}
+
+export type UpdateEquipmentInputStatus =
+  (typeof UpdateEquipmentInputStatus)[keyof typeof UpdateEquipmentInputStatus];
+
+export const UpdateEquipmentInputStatus = {
+  needed: "needed",
+  reserved: "reserved",
+  on_site: "on_site",
+  returned: "returned",
+} as const;
+
+export interface UpdateEquipmentInput {
+  name?: string;
+  quantity?: number;
+  notes?: string | null;
+  status?: UpdateEquipmentInputStatus;
+}
+
 export interface DashboardSummary {
   totalJobs: number;
   activeJobs: number;
