@@ -23,7 +23,7 @@ Full-stack field operations management app. Workers can book/schedule jobs, assi
 ### Pages / Routes
 - `/` — Dashboard: summary stats (active jobs, crew count, pending tasks, completed jobs), upcoming schedule, task completion chart
 - `/jobs` — Jobs list with status badges and date ranges; "New Job" dialog
-- `/jobs/:id` — Job detail with 6 tabs: Overview, Crew, Tasks, Equipment, Chat, Photos
+- `/jobs/:id` — Job detail with 8 tabs: Overview, Crew, Tasks, Equipment, Contacts, Chat, Photos, Forms
 - `/crew` — Crew member cards with avatar/role/contact
 - `/crew/:id` — Crew member detail
 - `/locations` — Job site locations with address, contact, access notes, and linked jobs

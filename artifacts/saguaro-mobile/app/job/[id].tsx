@@ -16,7 +16,14 @@ import {
   useListJobMessages,
   useListJobPhotos,
   useSendMessage,
+  useListJobForms,
+  useCreateJobForm,
+  useSubmitJobForm,
+  useDeleteJobForm,
+  getListJobFormsQueryKey,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import SignaturePad, { pathsToSvgString } from "@/components/SignaturePad";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -26,7 +33,26 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   cancelled: { label: "Cancelled", color: "#ef4444", bg: "#fee2e2" },
 };
 
-const TABS = ["Overview", "Tasks", "Crew", "Chat", "Photos", "Contacts"] as const;
+const TABS = ["Overview", "Tasks", "Crew", "Chat", "Photos", "Contacts", "Forms"] as const;
+
+const JOB_COMPLETION_FIELDS = [
+  { key: "work_description", label: "Work completed", type: "textarea" },
+  { key: "materials_used", label: "Materials used", type: "textarea" },
+  { key: "issues_notes", label: "Issues / notes", type: "textarea" },
+  { key: "client_present", label: "Client on site?", type: "yesno" },
+  { key: "walkthrough_completed", label: "Walkthrough done?", type: "yesno" },
+  { key: "site_cleaned", label: "Site cleaned?", type: "yesno" },
+] as const;
+
+const QC_FIELDS = [
+  { key: "inspector_name", label: "Inspector name", type: "text" },
+  { key: "meets_specifications", label: "Meets specs?", type: "yesno" },
+  { key: "safety_protocols", label: "Safety followed?", type: "yesno" },
+  { key: "site_cleanliness", label: "Site clean?", type: "yesno" },
+  { key: "deficiencies", label: "Deficiencies", type: "textarea" },
+  { key: "deficiencies_addressed", label: "Issues addressed?", type: "yesno" },
+  { key: "photos_taken", label: "Photos taken?", type: "yesno" },
+] as const;
 
 function InfoRow({ icon, label, value, colors }: { icon: any; label: string; value: string; colors: any }) {
   return (
@@ -65,6 +91,15 @@ export default function JobDetailScreen() {
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("Overview");
   const [message, setMessage] = useState("");
   const [crewId, setCrewId] = useState<number | null>(null);
+  const qc = useQueryClient();
+
+  // Forms tab state
+  const [formView, setFormView] = useState<"list" | "fill" | "sign">("list");
+  const [activeFormId, setActiveFormId] = useState<number | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [signerName, setSignerName] = useState("");
+  const [sigPaths, setSigPaths] = useState<string[]>([]);
+  const [sigEmpty, setSigEmpty] = useState(true);
 
   React.useEffect(() => {
     AsyncStorage.getItem("cc_crew_id").then((v) => { if (v) setCrewId(parseInt(v)); });
@@ -80,6 +115,34 @@ export default function JobDetailScreen() {
     query: { enabled: !!jobId && activeTab === "Photos" }
   });
   const sendMessage = useSendMessage();
+  const { data: forms = [] } = useListJobForms(jobId, { query: { enabled: !!jobId && activeTab === "Forms" } });
+  const { mutate: createForm, isPending: isCreatingForm } = useCreateJobForm({
+    mutation: {
+      onSuccess: (form: any) => {
+        qc.invalidateQueries({ queryKey: getListJobFormsQueryKey(jobId) });
+        setActiveFormId(form.id);
+        setFormValues({});
+        setFormView("fill");
+      },
+    },
+  });
+  const { mutate: submitForm, isPending: isSubmittingForm } = useSubmitJobForm({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListJobFormsQueryKey(jobId) });
+        setFormView("list");
+        setSigPaths([]);
+        setSigEmpty(true);
+        setSignerName("");
+      },
+    },
+  });
+  const { mutate: deleteForm } = useDeleteJobForm({
+    mutation: { onSuccess: () => qc.invalidateQueries({ queryKey: getListJobFormsQueryKey(jobId) }) },
+  });
+
+  const activeFormRecord = (forms as any[]).find((f) => f.id === activeFormId);
+  const activeFieldDefs = activeFormRecord?.formType === "quality_control" ? QC_FIELDS : JOB_COMPLETION_FIELDS;
 
   const s = makeStyles(colors);
   const cfg = job ? (STATUS_CONFIG[job.status] ?? STATUS_CONFIG.scheduled) : null;
@@ -367,6 +430,188 @@ export default function JobDetailScreen() {
               )}
             </View>
           )}
+
+          {activeTab === "Forms" && formView === "list" && (
+            <View style={{ gap: 12 }}>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <TouchableOpacity
+                  style={[s.formCreateBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => createForm({ id: jobId, data: { formType: "job_completion" } })}
+                  disabled={isCreatingForm}
+                >
+                  <Ionicons name="document-text-outline" size={16} color={colors.primary} />
+                  <Text style={[s.formCreateBtnText, { color: colors.primary }]}>Job Completion</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.formCreateBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={() => createForm({ id: jobId, data: { formType: "quality_control" } })}
+                  disabled={isCreatingForm}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={16} color={colors.primary} />
+                  <Text style={[s.formCreateBtnText, { color: colors.primary }]}>QC Checklist</Text>
+                </TouchableOpacity>
+              </View>
+              {(forms as any[]).length === 0 ? (
+                <EmptyState icon="document-outline" text="No forms yet — create one above" colors={colors} />
+              ) : (
+                (forms as any[]).map((form: any) => {
+                  const isSigned = form.status === "signed";
+                  return (
+                    <View key={form.id} style={[s.formCard, { backgroundColor: colors.card, borderColor: isSigned ? "#16a34a40" : colors.border }]}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+                        <View style={[s.formIconWrap, { backgroundColor: isSigned ? "#dcfce7" : "#fef3c7" }]}>
+                          <Ionicons
+                            name={isSigned ? "checkmark-circle" : "ellipse-outline"}
+                            size={18}
+                            color={isSigned ? "#16a34a" : "#d97706"}
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[s.formTitle, { color: colors.foreground }]}>
+                            {form.formType === "job_completion" ? "Job Completion Form" : "QC Checklist"}
+                          </Text>
+                          <Text style={[s.formSubtitle, { color: colors.mutedForeground }]}>
+                            {isSigned ? `Signed by ${form.signatureName}` : `Draft · ${new Date(form.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: "row", gap: 6, marginTop: 10 }}>
+                        {!isSigned && (
+                          <TouchableOpacity
+                            style={[s.formAction, { backgroundColor: colors.primary }]}
+                            onPress={() => { setActiveFormId(form.id); const p = form.fields ? JSON.parse(form.fields) : {}; setFormValues(p); setFormView("fill"); }}
+                          >
+                            <Text style={[s.formActionText, { color: "#fff" }]}>Fill & Sign</Text>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                          style={[s.formAction, { backgroundColor: colors.muted }]}
+                          onPress={() => deleteForm({ id: jobId, formId: form.id })}
+                        >
+                          <Ionicons name="trash-outline" size={13} color={colors.mutedForeground} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
+          )}
+
+          {activeTab === "Forms" && formView === "fill" && activeFormRecord && (
+            <View style={{ gap: 14 }}>
+              <TouchableOpacity onPress={() => setFormView("list")} style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 }}>
+                <Ionicons name="chevron-back" size={16} color={colors.primary} />
+                <Text style={{ fontSize: 14, fontFamily: "Inter_500Medium", color: colors.primary }}>Back to forms</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 16, fontFamily: "Inter_700Bold", color: colors.foreground }}>
+                {activeFormRecord.formType === "job_completion" ? "Job Completion Form" : "QC Checklist"}
+              </Text>
+
+              {activeFieldDefs.map((field) => (
+                <View key={field.key} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={{ fontSize: 13, fontFamily: "Inter_500Medium", color: colors.foreground, marginBottom: 8 }}>{field.label}</Text>
+                  {field.type === "yesno" ? (
+                    <View style={{ flexDirection: "row", gap: 8 }}>
+                      {["yes", "no"].map((v) => (
+                        <TouchableOpacity
+                          key={v}
+                          onPress={() => setFormValues((prev) => ({ ...prev, [field.key]: v }))}
+                          style={{
+                            flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: "center", borderWidth: 1.5,
+                            backgroundColor: formValues[field.key] === v ? (v === "yes" ? "#16a34a" : "#ef4444") : colors.background,
+                            borderColor: formValues[field.key] === v ? (v === "yes" ? "#16a34a" : "#ef4444") : colors.border,
+                          }}
+                        >
+                          <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: formValues[field.key] === v ? "#fff" : colors.mutedForeground }}>
+                            {v === "yes" ? "✓ Yes" : "✗ No"}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  ) : field.type === "textarea" ? (
+                    <TextInput
+                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, height: 80, textAlignVertical: "top" }]}
+                      value={formValues[field.key] ?? ""}
+                      onChangeText={(v) => setFormValues((prev) => ({ ...prev, [field.key]: v }))}
+                      placeholder="Enter details…"
+                      placeholderTextColor={colors.mutedForeground}
+                      multiline
+                    />
+                  ) : (
+                    <TextInput
+                      style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
+                      value={formValues[field.key] ?? ""}
+                      onChangeText={(v) => setFormValues((prev) => ({ ...prev, [field.key]: v }))}
+                      placeholder="Enter value…"
+                      placeholderTextColor={colors.mutedForeground}
+                    />
+                  )}
+                </View>
+              ))}
+
+              <TouchableOpacity
+                style={[s.formCreateBtn, { backgroundColor: colors.primary, borderColor: colors.primary, flex: 0 }]}
+                onPress={() => setFormView("sign")}
+              >
+                <Ionicons name="pencil-outline" size={16} color="#fff" />
+                <Text style={[s.formCreateBtnText, { color: "#fff" }]}>Continue to Signature</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {activeTab === "Forms" && formView === "sign" && (
+            <View style={{ gap: 16 }}>
+              <TouchableOpacity onPress={() => setFormView("fill")} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Ionicons name="chevron-back" size={16} color={colors.primary} />
+                <Text style={{ fontSize: 14, fontFamily: "Inter_500Medium", color: colors.primary }}>Back to form</Text>
+              </TouchableOpacity>
+
+              <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={{ fontSize: 14, fontFamily: "Inter_700Bold", color: colors.foreground, marginBottom: 4 }}>Electronic Signature</Text>
+                <Text style={{ fontSize: 13, fontFamily: "Inter_400Regular", color: colors.mutedForeground, marginBottom: 16, lineHeight: 20 }}>
+                  Draw your signature below, then enter your full name to legally sign this form.
+                </Text>
+
+                <SignaturePad
+                  onSignatureChange={(paths, isEmpty) => { setSigPaths(paths); setSigEmpty(isEmpty); }}
+                  strokeColor={colors.foreground}
+                  borderColor={colors.border}
+                  backgroundColor={colors.background}
+                />
+
+                <View style={{ marginTop: 16, gap: 6 }}>
+                  <Text style={{ fontSize: 13, fontFamily: "Inter_500Medium", color: colors.foreground }}>Full name (legal signature)</Text>
+                  <TextInput
+                    style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border }]}
+                    value={signerName}
+                    onChangeText={setSignerName}
+                    placeholder="Type your full name…"
+                    placeholderTextColor={colors.mutedForeground}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[s.formCreateBtn, {
+                    backgroundColor: !sigEmpty && signerName.trim() ? colors.primary : colors.muted,
+                    borderColor: "transparent", marginTop: 16, flex: 0,
+                    opacity: isSubmittingForm ? 0.7 : 1,
+                  }]}
+                  onPress={() => {
+                    if (!activeFormId || sigEmpty || !signerName.trim()) return;
+                    const svgData = pathsToSvgString(sigPaths, 300, 160);
+                    submitForm({ id: jobId, formId: activeFormId, data: { fields: formValues, signatureName: signerName.trim(), signatureData: svgData } });
+                  }}
+                  disabled={sigEmpty || !signerName.trim() || isSubmittingForm}
+                >
+                  <Ionicons name="checkmark-circle-outline" size={16} color={!sigEmpty && signerName.trim() ? "#fff" : colors.mutedForeground} />
+                  <Text style={[s.formCreateBtnText, { color: !sigEmpty && signerName.trim() ? "#fff" : colors.mutedForeground }]}>
+                    {isSubmittingForm ? "Submitting…" : "Sign & Submit"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </ScrollView>
       )}
     </View>
@@ -431,4 +676,13 @@ const makeStyles = (colors: any) =>
     photoImg: { width: "100%", height: 140 },
     photoPlaceholder: { width: "100%", height: 140, alignItems: "center", justifyContent: "center" },
     photoCaption: { fontSize: 11, fontFamily: "Inter_400Regular", padding: 6 },
+    // Forms
+    formCard: { borderRadius: 14, borderWidth: 1, padding: 14 },
+    formIconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+    formTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+    formSubtitle: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
+    formCreateBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, padding: 12, borderRadius: 12, borderWidth: 1 },
+    formCreateBtnText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
+    formAction: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 8 },
+    formActionText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   });

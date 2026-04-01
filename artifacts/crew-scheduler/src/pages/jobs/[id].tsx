@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
+import { format } from "date-fns";
 import { useParams, Link } from "wouter";
 import { 
   useGetJob, getGetJobQueryKey,
@@ -39,6 +40,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -49,8 +51,16 @@ import { formatDate, formatDateTime } from "@/lib/format";
 import { useToast } from "@/hooks/use-toast";
 import { 
   MapPin, Calendar as CalendarIcon, FileText, CheckSquare, 
-  MessageSquare, Camera, Users, Plus, Trash2, Send, Paperclip, X, Wrench, Package, Phone, Mail, Edit2
+  MessageSquare, Camera, Users, Plus, Trash2, Send, Paperclip, X, Wrench, Package, Phone, Mail, Edit2,
+  PenLine, ClipboardCheck, CheckCircle2, Circle, ChevronDown, ChevronRight
 } from "lucide-react";
+import {
+  useListJobForms,
+  useCreateJobForm,
+  useSubmitJobForm,
+  useDeleteJobForm,
+  getListJobFormsQueryKey,
+} from "@workspace/api-client-react";
 
 export default function JobDetail() {
   const { id } = useParams();
@@ -110,7 +120,7 @@ export default function JobDetail() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid grid-cols-7 w-full h-auto p-1 bg-muted/50 rounded-md">
+        <TabsList className="grid grid-cols-8 w-full h-auto p-1 bg-muted/50 rounded-md">
           <TabsTrigger value="overview" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><FileText className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Overview</span></TabsTrigger>
           <TabsTrigger value="crew" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Users className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Crew</span></TabsTrigger>
           <TabsTrigger value="tasks" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><CheckSquare className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Tasks</span></TabsTrigger>
@@ -118,6 +128,7 @@ export default function JobDetail() {
           <TabsTrigger value="contacts" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Phone className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Contacts</span></TabsTrigger>
           <TabsTrigger value="chat" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><MessageSquare className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Chat</span></TabsTrigger>
           <TabsTrigger value="photos" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><Camera className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Photos</span></TabsTrigger>
+          <TabsTrigger value="forms" className="data-[state=active]:bg-background data-[state=active]:shadow-sm py-2"><PenLine className="h-4 w-4 mr-1.5" /> <span className="hidden sm:inline">Forms</span></TabsTrigger>
         </TabsList>
         
         <div className="mt-6">
@@ -165,6 +176,10 @@ export default function JobDetail() {
 
           <TabsContent value="photos" className="outline-none focus-visible:ring-0">
             <JobPhotosTab jobId={jobId} />
+          </TabsContent>
+
+          <TabsContent value="forms" className="outline-none focus-visible:ring-0">
+            <JobFormsTab jobId={jobId} />
           </TabsContent>
         </div>
       </Tabs>
@@ -1426,6 +1441,321 @@ function JobContactsTab({ jobId }: { jobId: number }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// JOB FORMS TAB
+// -----------------------------------------------------------------------------
+
+const JOB_COMPLETION_FIELDS = [
+  { key: "work_description", label: "Description of work completed", type: "textarea" },
+  { key: "materials_used", label: "Materials used", type: "textarea" },
+  { key: "issues_notes", label: "Issues or notes", type: "textarea" },
+  { key: "client_present", label: "Client / customer present on site?", type: "yesno" },
+  { key: "walkthrough_completed", label: "Final walkthrough completed?", type: "yesno" },
+  { key: "site_cleaned", label: "Site cleaned and secured?", type: "yesno" },
+] as const;
+
+const QC_FIELDS = [
+  { key: "inspector_name", label: "Inspector name", type: "text" },
+  { key: "meets_specifications", label: "Work meets project specifications?", type: "yesno" },
+  { key: "safety_protocols", label: "All safety protocols followed?", type: "yesno" },
+  { key: "site_cleanliness", label: "Site cleanliness acceptable?", type: "yesno" },
+  { key: "deficiencies", label: "Deficiencies noted (leave blank if none)", type: "textarea" },
+  { key: "deficiencies_addressed", label: "All deficiencies have been addressed?", type: "yesno" },
+  { key: "photos_taken", label: "Photos taken of completed work?", type: "yesno" },
+] as const;
+
+type FormType = "job_completion" | "quality_control";
+type JobFormRecord = {
+  id: number; jobId: number; formType: FormType; status: "draft" | "signed";
+  fields?: string | null; signatureName?: string | null; signatureData?: string | null;
+  signedByCrewId?: number | null; signedAt?: string | null; createdAt: string;
+  signedByCrew?: { id: number; name: string } | null;
+};
+
+function JobFormsTab({ jobId }: { jobId: number }) {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const [view, setView] = useState<"list" | "fill">("list");
+  const [activeFormId, setActiveFormId] = useState<number | null>(null);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [signerName, setSignerName] = useState("");
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+
+  const { data: forms = [], isLoading } = useListJobForms(jobId);
+
+  const { mutate: createForm, isPending: isCreating } = useCreateJobForm({
+    mutation: {
+      onSuccess: (form: any) => {
+        qc.invalidateQueries({ queryKey: getListJobFormsQueryKey(jobId) });
+        setActiveFormId(form.id);
+        setFormValues({});
+        setSignerName("");
+        setView("fill");
+      },
+    },
+  });
+
+  const { mutate: submitForm, isPending: isSubmitting } = useSubmitJobForm({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListJobFormsQueryKey(jobId) });
+        setView("list");
+        toast({ title: "Form signed and submitted" });
+      },
+    },
+  });
+
+  const { mutate: deleteForm } = useDeleteJobForm({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getListJobFormsQueryKey(jobId) });
+        setDeleteId(null);
+      },
+    },
+  });
+
+  const activeForm = (forms as JobFormRecord[]).find((f) => f.id === activeFormId);
+  const fields = activeForm?.formType === "quality_control" ? QC_FIELDS : JOB_COMPLETION_FIELDS;
+
+  const handleSubmit = () => {
+    if (!signerName.trim()) {
+      toast({ title: "Please enter the signer's name", variant: "destructive" });
+      return;
+    }
+    if (!activeFormId) return;
+    submitForm({
+      id: jobId,
+      formId: activeFormId,
+      data: { fields: formValues, signatureName: signerName.trim(), signatureData: "typed" },
+    });
+  };
+
+  if (isLoading) return <div className="py-12 text-center text-muted-foreground">Loading forms…</div>;
+
+  if (view === "fill" && activeForm) {
+    return (
+      <div className="space-y-6 max-w-2xl mx-auto">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => setView("list")} className="gap-1">
+            <ChevronRight className="h-4 w-4 rotate-180" /> Back
+          </Button>
+          <h3 className="font-semibold text-base">
+            {activeForm.formType === "job_completion" ? "Job Completion Form" : "Quality Control Checklist"}
+          </h3>
+        </div>
+
+        <Card>
+          <CardContent className="p-6 space-y-5">
+            {fields.map((field) => (
+              <div key={field.key} className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">{field.label}</label>
+                {field.type === "yesno" ? (
+                  <div className="flex gap-2">
+                    {["yes", "no"].map((v) => (
+                      <button
+                        key={v}
+                        onClick={() => setFormValues((prev) => ({ ...prev, [field.key]: v }))}
+                        className={`px-5 py-2 rounded-md border text-sm font-medium transition-colors ${
+                          formValues[field.key] === v
+                            ? v === "yes" ? "bg-green-600 border-green-600 text-white" : "bg-red-500 border-red-500 text-white"
+                            : "border-border text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {v === "yes" ? "✓ Yes" : "✗ No"}
+                      </button>
+                    ))}
+                  </div>
+                ) : field.type === "textarea" ? (
+                  <textarea
+                    className="w-full min-h-[80px] px-3 py-2 text-sm border border-border rounded-md bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    placeholder="Enter details…"
+                    value={formValues[field.key] ?? ""}
+                    onChange={(e) => setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                  />
+                ) : (
+                  <input
+                    className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    placeholder="Enter value…"
+                    value={formValues[field.key] ?? ""}
+                    onChange={(e) => setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                  />
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
+        {/* Electronic Signature */}
+        <Card>
+          <CardHeader className="pb-3 border-b">
+            <CardTitle className="text-base flex items-center gap-2">
+              <PenLine className="h-4 w-4 text-primary" />
+              Electronic Signature
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              By entering your full name below, you confirm that the information above is accurate and complete. This serves as your electronic signature.
+            </p>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Full name (legal signature)</label>
+              <input
+                className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                placeholder="Type your full name to sign…"
+                value={signerName}
+                onChange={(e) => setSignerName(e.target.value)}
+              />
+            </div>
+            {signerName && (
+              <div className="border border-border rounded-md p-4 bg-muted/20 text-center">
+                <p className="text-2xl" style={{ fontFamily: "Georgia, serif", fontStyle: "italic", color: "#1a1a1a" }}>
+                  {signerName}
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Signed electronically · {new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                </p>
+              </div>
+            )}
+            <Button className="w-full gap-2" onClick={handleSubmit} disabled={isSubmitting || !signerName.trim()}>
+              <PenLine className="h-4 w-4" />
+              {isSubmitting ? "Submitting…" : "Sign & Submit Form"}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          {(forms as JobFormRecord[]).length === 0 ? "No forms yet" : `${(forms as JobFormRecord[]).length} form${(forms as JobFormRecord[]).length !== 1 ? "s" : ""}`}
+        </p>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isCreating}
+            onClick={() => createForm({ id: jobId, data: { formType: "quality_control" } })}
+            className="gap-1.5"
+          >
+            <ClipboardCheck className="h-3.5 w-3.5" />
+            QC Checklist
+          </Button>
+          <Button
+            size="sm"
+            disabled={isCreating}
+            onClick={() => createForm({ id: jobId, data: { formType: "job_completion" } })}
+            className="gap-1.5"
+          >
+            <PenLine className="h-3.5 w-3.5" />
+            Job Completion
+          </Button>
+        </div>
+      </div>
+
+      {(forms as JobFormRecord[]).length === 0 ? (
+        <Card className="p-12 text-center">
+          <PenLine className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+          <p className="font-medium mb-1">No forms yet</p>
+          <p className="text-sm text-muted-foreground">Create a Job Completion or Quality Control form above.</p>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {(forms as JobFormRecord[]).map((form) => {
+            const isSigned = form.status === "signed";
+            const parsed = form.fields ? JSON.parse(form.fields) as Record<string, string> : {};
+            const fieldDefs = form.formType === "quality_control" ? QC_FIELDS : JOB_COMPLETION_FIELDS;
+            const isExpanded = expandedId === form.id;
+
+            return (
+              <Card key={form.id} className={isSigned ? "border-green-200" : ""}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className={`p-2 rounded-lg shrink-0 ${isSigned ? "bg-green-50" : "bg-amber-50"}`}>
+                        {isSigned
+                          ? <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          : <Circle className="h-4 w-4 text-amber-500" />
+                        }
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">
+                          {form.formType === "job_completion" ? "Job Completion Form" : "Quality Control Checklist"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {isSigned
+                            ? `Signed by ${form.signatureName} · ${format(new Date(form.signedAt!), "MMM d, yyyy h:mm a")}`
+                            : `Created ${format(new Date(form.createdAt), "MMM d, yyyy")}`
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge variant="outline" className={isSigned ? "bg-green-50 text-green-700 border-green-200" : "bg-amber-50 text-amber-600 border-amber-200"}>
+                        {isSigned ? "Signed" : "Draft"}
+                      </Badge>
+                      {!isSigned && (
+                        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => { setActiveFormId(form.id); setFormValues(parsed); setView("fill"); }}>
+                          <PenLine className="h-3 w-3" /> Fill
+                        </Button>
+                      )}
+                      {isSigned && (
+                        <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={() => setExpandedId(isExpanded ? null : form.id)}>
+                          {isExpanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                          View
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive" onClick={() => setDeleteId(form.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {isExpanded && isSigned && (
+                    <div className="mt-4 pt-4 border-t space-y-3">
+                      {fieldDefs.map((fd) => (
+                        <div key={fd.key} className="flex items-start justify-between gap-4 text-sm">
+                          <span className="text-muted-foreground shrink-0 w-64">{fd.label}</span>
+                          <span className={`font-medium text-right ${parsed[fd.key] === "yes" ? "text-green-600" : parsed[fd.key] === "no" ? "text-red-500" : ""}`}>
+                            {parsed[fd.key] === "yes" ? "✓ Yes" : parsed[fd.key] === "no" ? "✗ No" : parsed[fd.key] || "—"}
+                          </span>
+                        </div>
+                      ))}
+                      <div className="mt-3 pt-3 border-t flex items-center gap-2 text-sm">
+                        <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-muted-foreground">Signed by:</span>
+                        <span className="font-medium" style={{ fontFamily: "Georgia, serif", fontStyle: "italic" }}>{form.signatureName}</span>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Form</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently delete this form and its signature. This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => deleteId && deleteForm({ id: jobId, formId: deleteId })}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -15,6 +15,7 @@ import timeEntriesRouter from "./time-entries";
 import jobContactsRouter from "./job-contacts";
 import sideQuestsRouter from "./side-quests";
 import employeeRequestsRouter from "./employee-requests";
+import jobFormsRouter from "./job-forms";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(equipmentRouter);
 router.use(dashboardRouter);
 router.use(sideQuestsRouter);
 router.use(employeeRequestsRouter);
+router.use(jobFormsRouter);
 
 export default router;

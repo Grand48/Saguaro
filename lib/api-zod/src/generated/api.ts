@@ -1083,6 +1083,102 @@ export const GetUpcomingJobsResponseItem = zod.object({
 export const GetUpcomingJobsResponse = zod.array(GetUpcomingJobsResponseItem);
 
 /**
+ * @summary List all forms for a job
+ */
+export const ListJobFormsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListJobFormsResponseItem = zod.object({
+  id: zod.number(),
+  jobId: zod.number(),
+  formType: zod.enum(["job_completion", "quality_control"]),
+  status: zod.enum(["draft", "signed"]),
+  fields: zod.string().nullish().describe("JSON-encoded field values"),
+  signatureName: zod.string().nullish(),
+  signatureData: zod
+    .string()
+    .nullish()
+    .describe("SVG path data for the hand-drawn signature"),
+  signedByCrewId: zod.number().nullish(),
+  signedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  signedByCrew: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      role: zod.string(),
+      phone: zod.string().nullish(),
+      email: zod.string().nullish(),
+      avatarUrl: zod.string().nullish(),
+      createdAt: zod.coerce.date(),
+    })
+    .nullish(),
+});
+export const ListJobFormsResponse = zod.array(ListJobFormsResponseItem);
+
+/**
+ * @summary Start a new form for a job
+ */
+export const CreateJobFormParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateJobFormBody = zod.object({
+  formType: zod.enum(["job_completion", "quality_control"]),
+});
+
+/**
+ * @summary Submit or update a form (with electronic signature)
+ */
+export const SubmitJobFormParams = zod.object({
+  id: zod.coerce.number(),
+  formId: zod.coerce.number(),
+});
+
+export const SubmitJobFormBody = zod.object({
+  fields: zod.record(zod.string(), zod.string()).optional(),
+  signatureName: zod.string().optional(),
+  signatureData: zod.string().optional(),
+  signedByCrewId: zod.number().optional(),
+});
+
+export const SubmitJobFormResponse = zod.object({
+  id: zod.number(),
+  jobId: zod.number(),
+  formType: zod.enum(["job_completion", "quality_control"]),
+  status: zod.enum(["draft", "signed"]),
+  fields: zod.string().nullish().describe("JSON-encoded field values"),
+  signatureName: zod.string().nullish(),
+  signatureData: zod
+    .string()
+    .nullish()
+    .describe("SVG path data for the hand-drawn signature"),
+  signedByCrewId: zod.number().nullish(),
+  signedAt: zod.coerce.date().nullish(),
+  createdAt: zod.coerce.date(),
+  signedByCrew: zod
+    .object({
+      id: zod.number(),
+      name: zod.string(),
+      role: zod.string(),
+      phone: zod.string().nullish(),
+      email: zod.string().nullish(),
+      avatarUrl: zod.string().nullish(),
+      createdAt: zod.coerce.date(),
+    })
+    .nullish(),
+});
+
+/**
+ * @summary Delete a form
+ */
+export const DeleteJobFormParams = zod.object({
+  id: zod.coerce.number(),
+  formId: zod.coerce.number(),
+});
+
+/**
  * @summary List employee requests (filter by crewId or status)
  */
 export const ListEmployeeRequestsQueryParams = zod.object({

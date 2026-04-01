@@ -479,6 +479,58 @@ export interface UpdateEquipmentInput {
   status?: UpdateEquipmentInputStatus;
 }
 
+export type JobFormFormType =
+  (typeof JobFormFormType)[keyof typeof JobFormFormType];
+
+export const JobFormFormType = {
+  job_completion: "job_completion",
+  quality_control: "quality_control",
+} as const;
+
+export type JobFormStatus = (typeof JobFormStatus)[keyof typeof JobFormStatus];
+
+export const JobFormStatus = {
+  draft: "draft",
+  signed: "signed",
+} as const;
+
+export interface JobForm {
+  id: number;
+  jobId: number;
+  formType: JobFormFormType;
+  status: JobFormStatus;
+  /** JSON-encoded field values */
+  fields?: string | null;
+  signatureName?: string | null;
+  /** SVG path data for the hand-drawn signature */
+  signatureData?: string | null;
+  signedByCrewId?: number | null;
+  signedAt?: string | null;
+  createdAt: string;
+  signedByCrew?: CrewMember | null;
+}
+
+export type CreateJobFormInputFormType =
+  (typeof CreateJobFormInputFormType)[keyof typeof CreateJobFormInputFormType];
+
+export const CreateJobFormInputFormType = {
+  job_completion: "job_completion",
+  quality_control: "quality_control",
+} as const;
+
+export interface CreateJobFormInput {
+  formType: CreateJobFormInputFormType;
+}
+
+export type SubmitJobFormInputFields = { [key: string]: string };
+
+export interface SubmitJobFormInput {
+  fields?: SubmitJobFormInputFields;
+  signatureName?: string;
+  signatureData?: string;
+  signedByCrewId?: number;
+}
+
 export type EmployeeRequestCategory =
   (typeof EmployeeRequestCategory)[keyof typeof EmployeeRequestCategory];
 

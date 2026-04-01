@@ -37,6 +37,8 @@ tags:
     description: Optional unscheduled tasks that crew can claim when unlocked by admin
   - name: employee-requests
     description: Employee requests for tools, equipment, and supplies
+  - name: job-forms
+    description: Electronic forms for job completion and quality control, with digital signatures
   - name: dashboard
     description: Dashboard summary operations
 paths:
@@ -1212,6 +1214,98 @@ paths:
                 items:
                   $ref: "#/components/schemas/Job"
 
+  /jobs/{id}/forms:
+    get:
+      operationId: listJobForms
+      tags: [job-forms]
+      summary: List all forms for a job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of forms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JobForm"
+    post:
+      operationId: createJobForm
+      tags: [job-forms]
+      summary: Start a new form for a job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobFormInput"
+      responses:
+        "201":
+          description: Created form
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobForm"
+
+  /jobs/{id}/forms/{formId}:
+    patch:
+      operationId: submitJobForm
+      tags: [job-forms]
+      summary: Submit or update a form (with electronic signature)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: formId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitJobFormInput"
+      responses:
+        "200":
+          description: Updated form
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobForm"
+    delete:
+      operationId: deleteJobForm
+      tags: [job-forms]
+      summary: Delete a form
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: formId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /employee-requests:
     get:
       operationId: listEmployeeRequests
@@ -2175,6 +2269,74 @@ components:
         status:
           type: string
           enum: [needed, reserved, on_site, returned]
+
+    JobForm:
+      type: object
+      properties:
+        id:
+          type: integer
+        jobId:
+          type: integer
+        formType:
+          type: string
+          enum: [job_completion, quality_control]
+        status:
+          type: string
+          enum: [draft, signed]
+        fields:
+          type: string
+          nullable: true
+          description: JSON-encoded field values
+        signatureName:
+          type: string
+          nullable: true
+        signatureData:
+          type: string
+          nullable: true
+          description: SVG path data for the hand-drawn signature
+        signedByCrewId:
+          type: integer
+          nullable: true
+        signedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        signedByCrew:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/CrewMember"
+      required:
+        - id
+        - jobId
+        - formType
+        - status
+        - createdAt
+
+    CreateJobFormInput:
+      type: object
+      properties:
+        formType:
+          type: string
+          enum: [job_completion, quality_control]
+      required:
+        - formType
+
+    SubmitJobFormInput:
+      type: object
+      properties:
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+        signatureName:
+          type: string
+        signatureData:
+          type: string
+        signedByCrewId:
+          type: integer
 
     EmployeeRequest:
       type: object

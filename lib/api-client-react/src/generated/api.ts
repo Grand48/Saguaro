@@ -24,6 +24,7 @@ import type {
   CreateEmployeeRequestInput,
   CreateEquipmentInput,
   CreateJobContactInput,
+  CreateJobFormInput,
   CreateJobInput,
   CreateLocationInput,
   CreateNotificationInput,
@@ -41,6 +42,7 @@ import type {
   Job,
   JobContact,
   JobDetail,
+  JobForm,
   ListEmployeeRequestsParams,
   Location,
   LocationDetail,
@@ -53,6 +55,7 @@ import type {
   Photo,
   SendMessageInput,
   SideQuest,
+  SubmitJobFormInput,
   Task,
   TimeEntry,
   TimeOffRequest,
@@ -5198,6 +5201,353 @@ export function useGetUpcomingJobs<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List all forms for a job
+ */
+export const getListJobFormsUrl = (id: number) => {
+  return `/api/jobs/${id}/forms`;
+};
+
+export const listJobForms = async (
+  id: number,
+  options?: RequestInit,
+): Promise<JobForm[]> => {
+  return customFetch<JobForm[]>(getListJobFormsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListJobFormsQueryKey = (id: number) => {
+  return [`/api/jobs/${id}/forms`] as const;
+};
+
+export const getListJobFormsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listJobForms>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listJobForms>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListJobFormsQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listJobForms>>> = ({
+    signal,
+  }) => listJobForms(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listJobForms>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListJobFormsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listJobForms>>
+>;
+export type ListJobFormsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all forms for a job
+ */
+
+export function useListJobForms<
+  TData = Awaited<ReturnType<typeof listJobForms>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listJobForms>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListJobFormsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Start a new form for a job
+ */
+export const getCreateJobFormUrl = (id: number) => {
+  return `/api/jobs/${id}/forms`;
+};
+
+export const createJobForm = async (
+  id: number,
+  createJobFormInput: CreateJobFormInput,
+  options?: RequestInit,
+): Promise<JobForm> => {
+  return customFetch<JobForm>(getCreateJobFormUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createJobFormInput),
+  });
+};
+
+export const getCreateJobFormMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createJobForm>>,
+    TError,
+    { id: number; data: BodyType<CreateJobFormInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createJobForm>>,
+  TError,
+  { id: number; data: BodyType<CreateJobFormInput> },
+  TContext
+> => {
+  const mutationKey = ["createJobForm"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createJobForm>>,
+    { id: number; data: BodyType<CreateJobFormInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return createJobForm(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateJobFormMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createJobForm>>
+>;
+export type CreateJobFormMutationBody = BodyType<CreateJobFormInput>;
+export type CreateJobFormMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Start a new form for a job
+ */
+export const useCreateJobForm = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createJobForm>>,
+    TError,
+    { id: number; data: BodyType<CreateJobFormInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createJobForm>>,
+  TError,
+  { id: number; data: BodyType<CreateJobFormInput> },
+  TContext
+> => {
+  return useMutation(getCreateJobFormMutationOptions(options));
+};
+
+/**
+ * @summary Submit or update a form (with electronic signature)
+ */
+export const getSubmitJobFormUrl = (id: number, formId: number) => {
+  return `/api/jobs/${id}/forms/${formId}`;
+};
+
+export const submitJobForm = async (
+  id: number,
+  formId: number,
+  submitJobFormInput: SubmitJobFormInput,
+  options?: RequestInit,
+): Promise<JobForm> => {
+  return customFetch<JobForm>(getSubmitJobFormUrl(id, formId), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(submitJobFormInput),
+  });
+};
+
+export const getSubmitJobFormMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitJobForm>>,
+    TError,
+    { id: number; formId: number; data: BodyType<SubmitJobFormInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof submitJobForm>>,
+  TError,
+  { id: number; formId: number; data: BodyType<SubmitJobFormInput> },
+  TContext
+> => {
+  const mutationKey = ["submitJobForm"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof submitJobForm>>,
+    { id: number; formId: number; data: BodyType<SubmitJobFormInput> }
+  > = (props) => {
+    const { id, formId, data } = props ?? {};
+
+    return submitJobForm(id, formId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SubmitJobFormMutationResult = NonNullable<
+  Awaited<ReturnType<typeof submitJobForm>>
+>;
+export type SubmitJobFormMutationBody = BodyType<SubmitJobFormInput>;
+export type SubmitJobFormMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit or update a form (with electronic signature)
+ */
+export const useSubmitJobForm = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof submitJobForm>>,
+    TError,
+    { id: number; formId: number; data: BodyType<SubmitJobFormInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof submitJobForm>>,
+  TError,
+  { id: number; formId: number; data: BodyType<SubmitJobFormInput> },
+  TContext
+> => {
+  return useMutation(getSubmitJobFormMutationOptions(options));
+};
+
+/**
+ * @summary Delete a form
+ */
+export const getDeleteJobFormUrl = (id: number, formId: number) => {
+  return `/api/jobs/${id}/forms/${formId}`;
+};
+
+export const deleteJobForm = async (
+  id: number,
+  formId: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteJobFormUrl(id, formId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteJobFormMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteJobForm>>,
+    TError,
+    { id: number; formId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteJobForm>>,
+  TError,
+  { id: number; formId: number },
+  TContext
+> => {
+  const mutationKey = ["deleteJobForm"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteJobForm>>,
+    { id: number; formId: number }
+  > = (props) => {
+    const { id, formId } = props ?? {};
+
+    return deleteJobForm(id, formId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteJobFormMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteJobForm>>
+>;
+
+export type DeleteJobFormMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a form
+ */
+export const useDeleteJobForm = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteJobForm>>,
+    TError,
+    { id: number; formId: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteJobForm>>,
+  TError,
+  { id: number; formId: number },
+  TContext
+> => {
+  return useMutation(getDeleteJobFormMutationOptions(options));
+};
 
 /**
  * @summary List employee requests (filter by crewId or status)
