@@ -9,6 +9,8 @@ import JobsList from "./pages/jobs/index";
 import JobDetail from "./pages/jobs/[id]";
 import CrewList from "./pages/crew/index";
 import CrewDetail from "./pages/crew/[id]";
+import LocationsList from "./pages/locations/index";
+import LocationDetail from "./pages/locations/[id]";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +23,8 @@ function Router() {
         <Route path="/jobs/:id" component={JobDetail} />
         <Route path="/crew" component={CrewList} />
         <Route path="/crew/:id" component={CrewDetail} />
+        <Route path="/locations" component={LocationsList} />
+        <Route path="/locations/:id" component={LocationDetail} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

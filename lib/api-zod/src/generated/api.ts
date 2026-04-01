@@ -89,12 +89,149 @@ export const DeleteCrewMemberParams = zod.object({
 });
 
 /**
+ * @summary List all locations with their associated jobs
+ */
+export const ListLocationsResponseItem = zod
+  .object({
+    id: zod.number(),
+    name: zod.string(),
+    address: zod.string(),
+    city: zod.string(),
+    state: zod.string(),
+    zip: zod.string().nullish(),
+    contactName: zod.string().nullish(),
+    contactPhone: zod.string().nullish(),
+    contactEmail: zod.string().nullish(),
+    accessNotes: zod.string().nullish(),
+    notes: zod.string().nullish(),
+    createdAt: zod.coerce.date(),
+  })
+  .and(
+    zod.object({
+      jobs: zod.array(
+        zod.object({
+          id: zod.number(),
+          title: zod.string(),
+          status: zod.string(),
+          locationId: zod.number().nullish(),
+        }),
+      ),
+    }),
+  );
+export const ListLocationsResponse = zod.array(ListLocationsResponseItem);
+
+/**
+ * @summary Create a location
+ */
+export const CreateLocationBody = zod.object({
+  name: zod.string(),
+  address: zod.string(),
+  city: zod.string(),
+  state: zod.string(),
+  zip: zod.string().nullish(),
+  contactName: zod.string().nullish(),
+  contactPhone: zod.string().nullish(),
+  contactEmail: zod.string().nullish(),
+  accessNotes: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Get a location with its linked jobs
+ */
+export const GetLocationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetLocationResponse = zod
+  .object({
+    id: zod.number(),
+    name: zod.string(),
+    address: zod.string(),
+    city: zod.string(),
+    state: zod.string(),
+    zip: zod.string().nullish(),
+    contactName: zod.string().nullish(),
+    contactPhone: zod.string().nullish(),
+    contactEmail: zod.string().nullish(),
+    accessNotes: zod.string().nullish(),
+    notes: zod.string().nullish(),
+    createdAt: zod.coerce.date(),
+  })
+  .and(
+    zod.object({
+      jobs: zod.array(
+        zod.object({
+          id: zod.number(),
+          title: zod.string(),
+          location: zod.string(),
+          locationId: zod.number().nullish(),
+          scope: zod.string(),
+          status: zod.enum([
+            "scheduled",
+            "in_progress",
+            "completed",
+            "cancelled",
+          ]),
+          startDate: zod.coerce.date(),
+          endDate: zod.coerce.date().nullish(),
+          notes: zod.string().nullish(),
+          createdAt: zod.coerce.date(),
+        }),
+      ),
+    }),
+  );
+
+/**
+ * @summary Update a location
+ */
+export const UpdateLocationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateLocationBody = zod.object({
+  name: zod.string(),
+  address: zod.string(),
+  city: zod.string(),
+  state: zod.string(),
+  zip: zod.string().nullish(),
+  contactName: zod.string().nullish(),
+  contactPhone: zod.string().nullish(),
+  contactEmail: zod.string().nullish(),
+  accessNotes: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateLocationResponse = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  address: zod.string(),
+  city: zod.string(),
+  state: zod.string(),
+  zip: zod.string().nullish(),
+  contactName: zod.string().nullish(),
+  contactPhone: zod.string().nullish(),
+  contactEmail: zod.string().nullish(),
+  accessNotes: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Delete a location
+ */
+export const DeleteLocationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary List all jobs
  */
 export const ListJobsResponseItem = zod.object({
   id: zod.number(),
   title: zod.string(),
   location: zod.string(),
+  locationId: zod.number().nullish(),
   scope: zod.string(),
   status: zod.enum(["scheduled", "in_progress", "completed", "cancelled"]),
   startDate: zod.coerce.date(),
@@ -110,6 +247,7 @@ export const ListJobsResponse = zod.array(ListJobsResponseItem);
 export const CreateJobBody = zod.object({
   title: zod.string(),
   location: zod.string(),
+  locationId: zod.number().nullish(),
   scope: zod.string(),
   status: zod.enum(["scheduled", "in_progress", "completed", "cancelled"]),
   startDate: zod.coerce.date(),
@@ -178,6 +316,7 @@ export const UpdateJobParams = zod.object({
 export const UpdateJobBody = zod.object({
   title: zod.string(),
   location: zod.string(),
+  locationId: zod.number().nullish(),
   scope: zod.string(),
   status: zod.enum(["scheduled", "in_progress", "completed", "cancelled"]),
   startDate: zod.coerce.date(),
@@ -189,6 +328,7 @@ export const UpdateJobResponse = zod.object({
   id: zod.number(),
   title: zod.string(),
   location: zod.string(),
+  locationId: zod.number().nullish(),
   scope: zod.string(),
   status: zod.enum(["scheduled", "in_progress", "completed", "cancelled"]),
   startDate: zod.coerce.date(),
@@ -496,6 +636,7 @@ export const GetUpcomingJobsResponseItem = zod.object({
   id: zod.number(),
   title: zod.string(),
   location: zod.string(),
+  locationId: zod.number().nullish(),
   scope: zod.string(),
   status: zod.enum(["scheduled", "in_progress", "completed", "cancelled"]),
   startDate: zod.coerce.date(),

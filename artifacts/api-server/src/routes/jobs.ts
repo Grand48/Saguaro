@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, jobsTable, jobCrewTable, crewMembersTable, tasksTable, insertJobSchema } from "@workspace/db";
+import { db, jobsTable, jobCrewTable, crewMembersTable, tasksTable, insertJobSchema, locationsTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
@@ -32,6 +32,13 @@ router.get("/jobs/:id", async (req, res) => {
     const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, id));
     if (!job) return res.status(404).json({ error: "Job not found" });
 
+    // Get linked location
+    let locationData = null;
+    if (job.locationId) {
+      const [loc] = await db.select().from(locationsTable).where(eq(locationsTable.id, job.locationId));
+      locationData = loc ?? null;
+    }
+
     // Get assigned crew
     const crewRows = await db
       .select({ crew: crewMembersTable })
@@ -49,7 +56,7 @@ router.get("/jobs/:id", async (req, res) => {
       .orderBy(tasksTable.createdAt);
     const tasks = taskRows.map((r) => ({ ...r.task, assignedTo: r.assignedTo ?? null }));
 
-    res.json({ ...job, crew, tasks });
+    res.json({ ...job, locationData, crew, tasks });
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Failed to get job" });

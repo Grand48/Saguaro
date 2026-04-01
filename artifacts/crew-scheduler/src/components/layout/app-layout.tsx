@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "wouter";
-import { Hammer, Users, Calendar, Settings, Menu } from "lucide-react";
+import { Hammer, Users, Calendar, MapPin, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -11,6 +11,7 @@ const NavItems = () => {
     { href: "/", label: "Dashboard", icon: Calendar },
     { href: "/jobs", label: "Jobs", icon: Hammer },
     { href: "/crew", label: "Crew", icon: Users },
+    { href: "/locations", label: "Locations", icon: MapPin },
   ];
 
   return (

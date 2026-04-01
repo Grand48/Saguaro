@@ -31,6 +31,32 @@ export interface CreateCrewMemberInput {
   avatarUrl?: string | null;
 }
 
+export interface Location {
+  id: number;
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip?: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  accessNotes?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export type LocationWithJobsJobsItem = {
+  id: number;
+  title: string;
+  status: string;
+  locationId?: number | null;
+};
+
+export type LocationWithJobs = Location & {
+  jobs: LocationWithJobsJobsItem[];
+};
+
 export type JobStatus = (typeof JobStatus)[keyof typeof JobStatus];
 
 export const JobStatus = {
@@ -44,12 +70,30 @@ export interface Job {
   id: number;
   title: string;
   location: string;
+  locationId?: number | null;
   scope: string;
   status: JobStatus;
   startDate: string;
   endDate?: string | null;
   notes?: string | null;
   createdAt: string;
+}
+
+export type LocationDetail = Location & {
+  jobs: Job[];
+};
+
+export interface CreateLocationInput {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  zip?: string | null;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  accessNotes?: string | null;
+  notes?: string | null;
 }
 
 export type CreateJobInputStatus =
@@ -65,6 +109,7 @@ export const CreateJobInputStatus = {
 export interface CreateJobInput {
   title: string;
   location: string;
+  locationId?: number | null;
   scope: string;
   status: CreateJobInputStatus;
   startDate: string;

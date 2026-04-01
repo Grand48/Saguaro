@@ -11,6 +11,8 @@ tags:
     description: Health operations
   - name: crew
     description: Crew member operations
+  - name: locations
+    description: Location operations
   - name: jobs
     description: Job operations
   - name: tasks
@@ -121,6 +123,100 @@ paths:
       operationId: deleteCrewMember
       tags: [crew]
       summary: Delete a crew member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── LOCATIONS ───────────────────────────────────────────────────────────────
+  /locations:
+    get:
+      operationId: listLocations
+      tags: [locations]
+      summary: List all locations with their associated jobs
+      responses:
+        "200":
+          description: List of locations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LocationWithJobs"
+    post:
+      operationId: createLocation
+      tags: [locations]
+      summary: Create a location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLocationInput"
+      responses:
+        "201":
+          description: Created location
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Location"
+
+  /locations/{id}:
+    get:
+      operationId: getLocation
+      tags: [locations]
+      summary: Get a location with its linked jobs
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Location detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocationDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateLocation
+      tags: [locations]
+      summary: Update a location
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLocationInput"
+      responses:
+        "200":
+          description: Updated location
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Location"
+    delete:
+      operationId: deleteLocation
+      tags: [locations]
+      summary: Delete a location
       parameters:
         - name: id
           in: path
@@ -671,6 +767,116 @@ components:
         - name
         - role
 
+    Location:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+          nullable: true
+        contactName:
+          type: string
+          nullable: true
+        contactPhone:
+          type: string
+          nullable: true
+        contactEmail:
+          type: string
+          nullable: true
+        accessNotes:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - address
+        - city
+        - state
+        - createdAt
+
+    LocationWithJobs:
+      allOf:
+        - $ref: "#/components/schemas/Location"
+        - type: object
+          properties:
+            jobs:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  status:
+                    type: string
+                  locationId:
+                    type: integer
+                    nullable: true
+                required: [id, title, status]
+          required: [jobs]
+
+    LocationDetail:
+      allOf:
+        - $ref: "#/components/schemas/Location"
+        - type: object
+          properties:
+            jobs:
+              type: array
+              items:
+                $ref: "#/components/schemas/Job"
+          required: [jobs]
+
+    CreateLocationInput:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zip:
+          type: string
+          nullable: true
+        contactName:
+          type: string
+          nullable: true
+        contactPhone:
+          type: string
+          nullable: true
+        contactEmail:
+          type: string
+          nullable: true
+        accessNotes:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+        - name
+        - address
+        - city
+        - state
+
     Job:
       type: object
       properties:
@@ -680,6 +886,9 @@ components:
           type: string
         location:
           type: string
+        locationId:
+          type: integer
+          nullable: true
         scope:
           type: string
         status:
@@ -714,6 +923,9 @@ components:
           type: string
         location:
           type: string
+        locationId:
+          type: integer
+          nullable: true
         scope:
           type: string
         status:

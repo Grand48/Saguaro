@@ -10,6 +10,7 @@ import type { CreateJobInputStatus } from "./createJobInputStatus";
 export interface CreateJobInput {
   title: string;
   location: string;
+  locationId?: number | null;
   scope: string;
   status: CreateJobInputStatus;
   startDate: Date;

@@ -11,6 +11,7 @@ export interface Job {
   id: number;
   title: string;
   location: string;
+  locationId?: number | null;
   scope: string;
   status: JobStatus;
   startDate: Date;

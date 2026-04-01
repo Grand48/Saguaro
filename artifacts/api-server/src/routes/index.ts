@@ -7,11 +7,13 @@ import messagesRouter from "./messages";
 import photosRouter from "./photos";
 import equipmentRouter from "./equipment";
 import dashboardRouter from "./dashboard";
+import locationsRouter from "./locations";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(crewRouter);
+router.use(locationsRouter);
 router.use(jobsRouter);
 router.use(tasksRouter);
 router.use(messagesRouter);

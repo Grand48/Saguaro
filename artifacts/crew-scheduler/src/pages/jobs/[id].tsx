@@ -19,6 +19,7 @@ import {
   useCreateEquipment,
   useUpdateEquipment,
   useDeleteEquipment,
+  useGetLocation, getGetLocationQueryKey,
   getGetUpcomingJobsQueryKey,
   getGetDashboardSummaryQueryKey
 } from "@workspace/api-client-react";
