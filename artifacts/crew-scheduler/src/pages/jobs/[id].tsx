@@ -1472,6 +1472,52 @@ const QC_CHECKLIST_ITEMS = [
   { key: "chk_durometer_readings", label: "Durometer readings" },
   { key: "chk_work_area_after", label: "Work area after completed work" },
 ];
+const QC_SPLICE_SECTIONS: Array<{ title: string; fields: Array<{ key: string; label: string; type: string; options?: string[] }> }> = [
+  { title: "Belt Information", fields: [
+    { key: "belt_new_or_used", label: "New or used belt", type: "select", options: ["New", "Used"] },
+    { key: "splice_or_new_install", label: "Resplice or new install", type: "select", options: ["Resplice", "New Install"] },
+    { key: "belt_manufacture", label: "Belt manufacturer", type: "text" },
+    { key: "belt_width", label: "Belt width", type: "text" },
+    { key: "belt_thickness", label: "Belt thickness", type: "text" },
+    { key: "piw_or_st", label: "PIW or ST", type: "select", options: ["PIW", "ST"] },
+  ]},
+  { title: "Splice Details", fields: [
+    { key: "splice_type", label: "Splice type", type: "select", options: ["Lap", "Finger", "Cable"] },
+    { key: "splice_length", label: "Splice length", type: "text" },
+    { key: "step_length", label: "Step length", type: "text" },
+    { key: "cable_stage", label: "Cable stage", type: "text" },
+    { key: "nel_length", label: "NEL length", type: "text" },
+  ]},
+  { title: "Cover & Dimensions", fields: [
+    { key: "top_cover_thickness", label: "Top cover thickness", type: "text" },
+    { key: "bottom_cover_thickness", label: "Bottom cover thickness", type: "text" },
+    { key: "edge_iron_thickness", label: "Edge iron thickness", type: "text" },
+  ]},
+  { title: "Equipment & Setup", fields: [
+    { key: "take_up_type", label: "Take up type", type: "select", options: ["Gravity", "Screw", "Hydraulic"] },
+    { key: "take_up_length", label: "Length of take up", type: "text" },
+    { key: "can_pull_up", label: "Can it be pulled up and spliced?", type: "yesno" },
+    { key: "cook_temp", label: "Required cook temp", type: "text" },
+    { key: "splice_pressure", label: "Required splice pressure", type: "text" },
+    { key: "vulcanizer_type", label: "Vulcanizer type", type: "text" },
+    { key: "water_source", label: "Water source", type: "text" },
+    { key: "power_source", label: "Power source", type: "text" },
+  ]},
+  { title: "Materials & Expiration", fields: [
+    { key: "splice_rubber_manufacture", label: "Splice rubber manufacturer", type: "text" },
+    { key: "top_cover_exp", label: "Top cover expiration", type: "date" },
+    { key: "bottom_cover_exp", label: "Bottom cover expiration", type: "date" },
+    { key: "inside_gum_exp", label: "Inside gum expiration", type: "date" },
+    { key: "noodle_exp", label: "Noodle expiration", type: "date" },
+    { key: "glue_exp", label: "Glue expiration", type: "date" },
+    { key: "cleaner_exp", label: "Cleaner expiration", type: "date" },
+  ]},
+  { title: "Quality & Sign-off", fields: [
+    { key: "white_rubber", label: "Splice marked with white rubber?", type: "yesno" },
+    { key: "porosity", label: "Porosity?", type: "yesno" },
+    { key: "lead_splicer", label: "Lead splicer / date", type: "text" },
+  ]},
+];
 const TIME_INTERVALS = [0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
 const TIME_LOG_COLS = [
   { key: "p1t", label: "Platen #1 Top" },
@@ -1508,6 +1554,17 @@ function buildFormSummaryText(form: JobFormRecord, jobName: string): string {
     lines.push("--- CHECKLIST ---");
     for (const item of QC_CHECKLIST_ITEMS) {
       lines.push(`${parsed[item.key] === "true" ? "[✓]" : "[ ]"} ${item.label}`);
+    }
+    lines.push("", "--- SPLICE INFORMATION ---");
+    for (const section of QC_SPLICE_SECTIONS) {
+      const filled = section.fields.filter((f) => parsed[f.key]);
+      if (filled.length > 0) {
+        lines.push(`\n[${section.title}]`);
+        for (const f of filled) {
+          const v = parsed[f.key];
+          lines.push(`${f.label}: ${v === "yes" ? "Yes" : v === "no" ? "No" : v}`);
+        }
+      }
     }
     lines.push("", "--- TEMPERATURE & PRESSURE LOG ---");
     if (parsed["tl_start_time"]) lines.push(`Start Time: ${parsed["tl_start_time"]}`);
@@ -1691,6 +1748,53 @@ function JobFormsTab({ jobId, jobName }: { jobId: number; jobName: string }) {
                     </button>
                   );
                 })}
+              </CardContent>
+            </Card>
+            {/* Splice Information */}
+            <Card>
+              <CardHeader className="pb-3 border-b">
+                <CardTitle className="text-sm font-semibold">Splice Information</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-6">
+                {QC_SPLICE_SECTIONS.map((section) => (
+                  <div key={section.title}>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">{section.title}</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                      {section.fields.map((field) => (
+                        <div key={field.key} className={`space-y-1.5 ${field.options && field.options.length === 3 ? "col-span-2" : ""}`}>
+                          <label className="text-xs font-medium text-foreground">{field.label}</label>
+                          {field.type === "yesno" ? (
+                            <div className="flex gap-2">
+                              {["yes", "no"].map((v) => (
+                                <button key={v}
+                                  onClick={() => setFormValues((prev) => ({ ...prev, [field.key]: v }))}
+                                  className={`px-4 py-1.5 rounded-md border text-xs font-medium transition-colors ${formValues[field.key] === v ? (v === "yes" ? "bg-green-600 border-green-600 text-white" : "bg-red-500 border-red-500 text-white") : "border-border text-muted-foreground hover:bg-muted"}`}
+                                >{v === "yes" ? "✓ Yes" : "✗ No"}</button>
+                              ))}
+                            </div>
+                          ) : field.type === "select" ? (
+                            <div className="flex flex-wrap gap-1.5">
+                              {(field.options ?? []).map((opt) => (
+                                <button key={opt}
+                                  onClick={() => setFormValues((prev) => ({ ...prev, [field.key]: opt }))}
+                                  className={`px-3 py-1.5 rounded-md border text-xs font-medium transition-colors ${formValues[field.key] === opt ? "bg-primary border-primary text-white" : "border-border text-muted-foreground hover:bg-muted"}`}
+                                >{opt}</button>
+                              ))}
+                            </div>
+                          ) : (
+                            <input
+                              type={field.type === "date" ? "date" : "text"}
+                              className="w-full px-3 py-1.5 text-xs border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                              placeholder={field.type !== "date" ? "Enter value…" : undefined}
+                              value={formValues[field.key] ?? ""}
+                              onChange={(e) => setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </CardContent>
             </Card>
             {/* Temperature & Pressure Log */}

@@ -59,6 +59,52 @@ const QC_CHECKLIST_ITEMS = [
   { key: "chk_durometer_readings", label: "Durometer readings" },
   { key: "chk_work_area_after", label: "Work area after completed work" },
 ];
+const QC_SPLICE_SECTIONS: Array<{ title: string; fields: Array<{ key: string; label: string; type: string; options?: string[] }> }> = [
+  { title: "Belt Information", fields: [
+    { key: "belt_new_or_used", label: "New or used belt", type: "select", options: ["New", "Used"] },
+    { key: "splice_or_new_install", label: "Resplice or new install", type: "select", options: ["Resplice", "New Install"] },
+    { key: "belt_manufacture", label: "Belt manufacturer", type: "text" },
+    { key: "belt_width", label: "Belt width", type: "text" },
+    { key: "belt_thickness", label: "Belt thickness", type: "text" },
+    { key: "piw_or_st", label: "PIW or ST", type: "select", options: ["PIW", "ST"] },
+  ]},
+  { title: "Splice Details", fields: [
+    { key: "splice_type", label: "Splice type", type: "select", options: ["Lap", "Finger", "Cable"] },
+    { key: "splice_length", label: "Splice length", type: "text" },
+    { key: "step_length", label: "Step length", type: "text" },
+    { key: "cable_stage", label: "Cable stage", type: "text" },
+    { key: "nel_length", label: "NEL length", type: "text" },
+  ]},
+  { title: "Cover & Dimensions", fields: [
+    { key: "top_cover_thickness", label: "Top cover thickness", type: "text" },
+    { key: "bottom_cover_thickness", label: "Bottom cover thickness", type: "text" },
+    { key: "edge_iron_thickness", label: "Edge iron thickness", type: "text" },
+  ]},
+  { title: "Equipment & Setup", fields: [
+    { key: "take_up_type", label: "Take up type", type: "select", options: ["Gravity", "Screw", "Hydraulic"] },
+    { key: "take_up_length", label: "Length of take up", type: "text" },
+    { key: "can_pull_up", label: "Can it be pulled up and spliced?", type: "yesno" },
+    { key: "cook_temp", label: "Required cook temp", type: "text" },
+    { key: "splice_pressure", label: "Required splice pressure", type: "text" },
+    { key: "vulcanizer_type", label: "Vulcanizer type", type: "text" },
+    { key: "water_source", label: "Water source", type: "text" },
+    { key: "power_source", label: "Power source", type: "text" },
+  ]},
+  { title: "Materials & Expiration", fields: [
+    { key: "splice_rubber_manufacture", label: "Splice rubber manufacturer", type: "text" },
+    { key: "top_cover_exp", label: "Top cover expiration", type: "date" },
+    { key: "bottom_cover_exp", label: "Bottom cover expiration", type: "date" },
+    { key: "inside_gum_exp", label: "Inside gum expiration", type: "date" },
+    { key: "noodle_exp", label: "Noodle expiration", type: "date" },
+    { key: "glue_exp", label: "Glue expiration", type: "date" },
+    { key: "cleaner_exp", label: "Cleaner expiration", type: "date" },
+  ]},
+  { title: "Quality & Sign-off", fields: [
+    { key: "white_rubber", label: "Splice marked with white rubber?", type: "yesno" },
+    { key: "porosity", label: "Porosity?", type: "yesno" },
+    { key: "lead_splicer", label: "Lead splicer / date", type: "text" },
+  ]},
+];
 const TIME_INTERVALS = [0,5,10,15,20,25,30,35,40,45,50,55,60,65,70,75,80,85,90,95,100];
 const TIME_LOG_COLS = [
   { key: "p1t", label: "P1 Top" },
@@ -86,6 +132,17 @@ function buildMobileFormSummary(form: any, jobName: string): string {
     lines.push("--- CHECKLIST ---");
     for (const item of QC_CHECKLIST_ITEMS) {
       lines.push(`${parsed[item.key] === "true" ? "[✓]" : "[ ]"} ${item.label}`);
+    }
+    lines.push("", "--- SPLICE INFORMATION ---");
+    for (const section of QC_SPLICE_SECTIONS) {
+      const filled = section.fields.filter((f) => parsed[f.key]);
+      if (filled.length > 0) {
+        lines.push(`[${section.title}]`);
+        for (const f of filled) {
+          const v = parsed[f.key];
+          lines.push(`${f.label}: ${v === "yes" ? "Yes" : v === "no" ? "No" : v}`);
+        }
+      }
     }
     lines.push("", "--- TEMP & PRESSURE LOG ---");
     if (parsed["tl_start_time"]) lines.push(`Start Time: ${parsed["tl_start_time"]}`);
@@ -654,6 +711,64 @@ export default function JobDetailScreen() {
                         </TouchableOpacity>
                       );
                     })}
+                  </View>
+                  {/* Splice Information */}
+                  <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                    <Text style={{ fontSize: 13, fontFamily: "Inter_600SemiBold", color: colors.foreground, marginBottom: 12 }}>Splice Information</Text>
+                    {QC_SPLICE_SECTIONS.map((section) => (
+                      <View key={section.title} style={{ marginBottom: 16 }}>
+                        <Text style={{ fontSize: 10, fontFamily: "Inter_600SemiBold", color: colors.mutedForeground, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8 }}>
+                          {section.title}
+                        </Text>
+                        {section.fields.map((field) => (
+                          <View key={field.key} style={{ marginBottom: 10 }}>
+                            <Text style={{ fontSize: 12, fontFamily: "Inter_500Medium", color: colors.foreground, marginBottom: 5 }}>{field.label}</Text>
+                            {field.type === "yesno" ? (
+                              <View style={{ flexDirection: "row", gap: 8 }}>
+                                {["yes", "no"].map((v) => (
+                                  <TouchableOpacity key={v}
+                                    onPress={() => setFormValues((prev) => ({ ...prev, [field.key]: v }))}
+                                    style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: "center", borderWidth: 1.5,
+                                      backgroundColor: formValues[field.key] === v ? (v === "yes" ? "#16a34a" : "#ef4444") : colors.background,
+                                      borderColor: formValues[field.key] === v ? (v === "yes" ? "#16a34a" : "#ef4444") : colors.border,
+                                    }}
+                                  >
+                                    <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: formValues[field.key] === v ? "#fff" : colors.mutedForeground }}>
+                                      {v === "yes" ? "✓ Yes" : "✗ No"}
+                                    </Text>
+                                  </TouchableOpacity>
+                                ))}
+                              </View>
+                            ) : field.type === "select" ? (
+                              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                                {(field.options ?? []).map((opt) => (
+                                  <TouchableOpacity key={opt}
+                                    onPress={() => setFormValues((prev) => ({ ...prev, [field.key]: opt }))}
+                                    style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1.5,
+                                      backgroundColor: formValues[field.key] === opt ? colors.primary : colors.background,
+                                      borderColor: formValues[field.key] === opt ? colors.primary : colors.border,
+                                    }}
+                                  >
+                                    <Text style={{ fontSize: 12, fontFamily: "Inter_600SemiBold", color: formValues[field.key] === opt ? "#fff" : colors.mutedForeground }}>
+                                      {opt}
+                                    </Text>
+                                  </TouchableOpacity>
+                                ))}
+                              </View>
+                            ) : (
+                              <TextInput
+                                style={[s.input, { backgroundColor: colors.background, color: colors.foreground, borderColor: colors.border, paddingVertical: 8 }]}
+                                value={formValues[field.key] ?? ""}
+                                onChangeText={(v) => setFormValues((prev) => ({ ...prev, [field.key]: v }))}
+                                placeholder={field.type === "date" ? "MM/DD/YYYY" : "Enter value…"}
+                                placeholderTextColor={colors.mutedForeground}
+                                keyboardType={field.type === "date" ? "numbers-and-punctuation" : "default"}
+                              />
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    ))}
                   </View>
                   {/* Time & Pressure Log */}
                   <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border, padding: 0, overflow: "hidden" }]}>
