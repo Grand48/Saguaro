@@ -1092,9 +1092,17 @@ export const ListJobFormsParams = zod.object({
 export const ListJobFormsResponseItem = zod.object({
   id: zod.number(),
   jobId: zod.number(),
-  formType: zod.enum(["job_completion", "quality_control"]),
+  formType: zod.enum(["job_completion", "quality_control", "custom"]),
   status: zod.enum(["draft", "signed"]),
   fields: zod.string().nullish().describe("JSON-encoded field values"),
+  customFormName: zod
+    .string()
+    .nullish()
+    .describe("File name of the uploaded custom form"),
+  customFormData: zod
+    .string()
+    .nullish()
+    .describe("Base64-encoded PDF or image of the uploaded form"),
   signatureName: zod.string().nullish(),
   signatureData: zod
     .string()
@@ -1125,7 +1133,17 @@ export const CreateJobFormParams = zod.object({
 });
 
 export const CreateJobFormBody = zod.object({
-  formType: zod.enum(["job_completion", "quality_control"]),
+  formType: zod.enum(["job_completion", "quality_control", "custom"]),
+  customFormName: zod
+    .string()
+    .optional()
+    .describe("File name of uploaded form (required when formType is custom)"),
+  customFormData: zod
+    .string()
+    .optional()
+    .describe(
+      "Base64-encoded PDF or image data URI (required when formType is custom)",
+    ),
 });
 
 /**
@@ -1146,9 +1164,17 @@ export const SubmitJobFormBody = zod.object({
 export const SubmitJobFormResponse = zod.object({
   id: zod.number(),
   jobId: zod.number(),
-  formType: zod.enum(["job_completion", "quality_control"]),
+  formType: zod.enum(["job_completion", "quality_control", "custom"]),
   status: zod.enum(["draft", "signed"]),
   fields: zod.string().nullish().describe("JSON-encoded field values"),
+  customFormName: zod
+    .string()
+    .nullish()
+    .describe("File name of the uploaded custom form"),
+  customFormData: zod
+    .string()
+    .nullish()
+    .describe("Base64-encoded PDF or image of the uploaded form"),
   signatureName: zod.string().nullish(),
   signatureData: zod
     .string()

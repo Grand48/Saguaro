@@ -9,4 +9,8 @@ import type { CreateJobFormInputFormType } from "./createJobFormInputFormType";
 
 export interface CreateJobFormInput {
   formType: CreateJobFormInputFormType;
+  /** File name of uploaded form (required when formType is custom) */
+  customFormName?: string;
+  /** Base64-encoded PDF or image data URI (required when formType is custom) */
+  customFormData?: string;
 }

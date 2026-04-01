@@ -10,6 +10,8 @@ export const jobFormsTable = pgTable("job_forms", {
   formType: text("form_type").notNull(),
   status: text("status").notNull().default("draft"),
   fields: text("fields"),
+  customFormName: text("custom_form_name"),
+  customFormData: text("custom_form_data"),
   signatureName: text("signature_name"),
   signatureData: text("signature_data"),
   signedByCrewId: integer("signed_by_crew_id").references(() => crewMembersTable.id, { onDelete: "set null" }),

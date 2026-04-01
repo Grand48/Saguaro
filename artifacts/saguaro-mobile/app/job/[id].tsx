@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Platform, Image, TextInput, KeyboardAvoidingView,
@@ -24,6 +24,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import SignaturePad, { pathsToSvgString } from "@/components/SignaturePad";
+import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -143,6 +144,22 @@ export default function JobDetailScreen() {
 
   const activeFormRecord = (forms as any[]).find((f) => f.id === activeFormId);
   const activeFieldDefs = activeFormRecord?.formType === "quality_control" ? QC_FIELDS : JOB_COMPLETION_FIELDS;
+
+  const handlePickImage = useCallback(async () => {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) { return; }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      base64: true,
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+    const asset = result.assets[0];
+    const mimeType = asset.mimeType ?? "image/jpeg";
+    const dataUrl = `data:${mimeType};base64,${asset.base64}`;
+    const fileName = asset.fileName ?? `form-${Date.now()}.jpg`;
+    createForm({ id: jobId, data: { formType: "custom", customFormName: fileName, customFormData: dataUrl } });
+  }, [createForm, jobId]);
 
   const s = makeStyles(colors);
   const cfg = job ? (STATUS_CONFIG[job.status] ?? STATUS_CONFIG.scheduled) : null;
@@ -433,6 +450,16 @@ export default function JobDetailScreen() {
 
           {activeTab === "Forms" && formView === "list" && (
             <View style={{ gap: 12 }}>
+              <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+                <TouchableOpacity
+                  style={[s.formCreateBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                  onPress={handlePickImage}
+                  disabled={isCreatingForm}
+                >
+                  <Ionicons name="cloud-upload-outline" size={16} color="#fff" />
+                  <Text style={[s.formCreateBtnText, { color: "#fff" }]}>Upload Form</Text>
+                </TouchableOpacity>
+              </View>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <TouchableOpacity
                   style={[s.formCreateBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
@@ -468,7 +495,9 @@ export default function JobDetailScreen() {
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={[s.formTitle, { color: colors.foreground }]}>
-                            {form.formType === "job_completion" ? "Job Completion Form" : "QC Checklist"}
+                            {form.formType === "job_completion" ? "Job Completion Form"
+                              : form.formType === "quality_control" ? "QC Checklist"
+                              : form.customFormName ?? "Uploaded Form"}
                           </Text>
                           <Text style={[s.formSubtitle, { color: colors.mutedForeground }]}>
                             {isSigned ? `Signed by ${form.signatureName}` : `Draft · ${new Date(form.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
@@ -505,10 +534,25 @@ export default function JobDetailScreen() {
                 <Text style={{ fontSize: 14, fontFamily: "Inter_500Medium", color: colors.primary }}>Back to forms</Text>
               </TouchableOpacity>
               <Text style={{ fontSize: 16, fontFamily: "Inter_700Bold", color: colors.foreground }}>
-                {activeFormRecord.formType === "job_completion" ? "Job Completion Form" : "QC Checklist"}
+                {activeFormRecord.formType === "job_completion" ? "Job Completion Form"
+                  : activeFormRecord.formType === "quality_control" ? "QC Checklist"
+                  : activeFormRecord.customFormName ?? "Uploaded Form"}
               </Text>
 
-              {activeFieldDefs.map((field) => (
+              {activeFormRecord.formType === "custom" && activeFormRecord.customFormData ? (
+                <View style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={{ fontSize: 13, fontFamily: "Inter_500Medium", color: colors.mutedForeground, marginBottom: 8 }}>
+                    Review the uploaded form below, then continue to add your signature.
+                  </Text>
+                  <Image
+                    source={{ uri: activeFormRecord.customFormData }}
+                    style={{ width: "100%", height: 300, borderRadius: 10 }}
+                    resizeMode="contain"
+                  />
+                </View>
+              ) : null}
+
+              {activeFormRecord.formType !== "custom" && activeFieldDefs.map((field) => (
                 <View key={field.key} style={[s.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <Text style={{ fontSize: 13, fontFamily: "Inter_500Medium", color: colors.foreground, marginBottom: 8 }}>{field.label}</Text>
                   {field.type === "yesno" ? (

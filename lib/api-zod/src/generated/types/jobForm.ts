@@ -16,6 +16,10 @@ export interface JobForm {
   status: JobFormStatus;
   /** JSON-encoded field values */
   fields?: string | null;
+  /** File name of the uploaded custom form */
+  customFormName?: string | null;
+  /** Base64-encoded PDF or image of the uploaded form */
+  customFormData?: string | null;
   signatureName?: string | null;
   /** SVG path data for the hand-drawn signature */
   signatureData?: string | null;

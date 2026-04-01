@@ -1468,10 +1468,11 @@ const QC_FIELDS = [
   { key: "photos_taken", label: "Photos taken of completed work?", type: "yesno" },
 ] as const;
 
-type FormType = "job_completion" | "quality_control";
+type FormType = "job_completion" | "quality_control" | "custom";
 type JobFormRecord = {
   id: number; jobId: number; formType: FormType; status: "draft" | "signed";
   fields?: string | null; signatureName?: string | null; signatureData?: string | null;
+  customFormName?: string | null; customFormData?: string | null;
   signedByCrewId?: number | null; signedAt?: string | null; createdAt: string;
   signedByCrew?: { id: number; name: string } | null;
 };
@@ -1485,6 +1486,8 @@ function JobFormsTab({ jobId }: { jobId: number }) {
   const [signerName, setSignerName] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: forms = [], isLoading } = useListJobForms(jobId);
 
@@ -1522,6 +1525,31 @@ function JobFormsTab({ jobId }: { jobId: number }) {
   const activeForm = (forms as JobFormRecord[]).find((f) => f.id === activeFormId);
   const fields = activeForm?.formType === "quality_control" ? QC_FIELDS : JOB_COMPLETION_FIELDS;
 
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      toast({ title: "File too large (max 20 MB)", variant: "destructive" });
+      return;
+    }
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      createForm({
+        id: jobId,
+        data: { formType: "custom", customFormName: file.name, customFormData: dataUrl },
+      });
+      setIsUploading(false);
+    };
+    reader.onerror = () => {
+      toast({ title: "Failed to read file", variant: "destructive" });
+      setIsUploading(false);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }, [createForm, jobId, toast]);
+
   const handleSubmit = () => {
     if (!signerName.trim()) {
       toast({ title: "Please enter the signer's name", variant: "destructive" });
@@ -1545,50 +1573,79 @@ function JobFormsTab({ jobId }: { jobId: number }) {
             <ChevronRight className="h-4 w-4 rotate-180" /> Back
           </Button>
           <h3 className="font-semibold text-base">
-            {activeForm.formType === "job_completion" ? "Job Completion Form" : "Quality Control Checklist"}
+            {activeForm.formType === "job_completion" ? "Job Completion Form"
+              : activeForm.formType === "quality_control" ? "Quality Control Checklist"
+              : activeForm.customFormName ?? "Uploaded Form"}
           </h3>
         </div>
 
-        <Card>
-          <CardContent className="p-6 space-y-5">
-            {fields.map((field) => (
-              <div key={field.key} className="space-y-1.5">
-                <label className="text-sm font-medium text-foreground">{field.label}</label>
-                {field.type === "yesno" ? (
-                  <div className="flex gap-2">
-                    {["yes", "no"].map((v) => (
-                      <button
-                        key={v}
-                        onClick={() => setFormValues((prev) => ({ ...prev, [field.key]: v }))}
-                        className={`px-5 py-2 rounded-md border text-sm font-medium transition-colors ${
-                          formValues[field.key] === v
-                            ? v === "yes" ? "bg-green-600 border-green-600 text-white" : "bg-red-500 border-red-500 text-white"
-                            : "border-border text-muted-foreground hover:bg-muted"
-                        }`}
-                      >
-                        {v === "yes" ? "✓ Yes" : "✗ No"}
-                      </button>
-                    ))}
-                  </div>
-                ) : field.type === "textarea" ? (
-                  <textarea
-                    className="w-full min-h-[80px] px-3 py-2 text-sm border border-border rounded-md bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="Enter details…"
-                    value={formValues[field.key] ?? ""}
-                    onChange={(e) => setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                  />
-                ) : (
-                  <input
-                    className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="Enter value…"
-                    value={formValues[field.key] ?? ""}
-                    onChange={(e) => setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                  />
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+        {activeForm.formType === "custom" && activeForm.customFormData ? (
+          <Card>
+            <CardHeader className="pb-3 border-b">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                {activeForm.customFormName}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {activeForm.customFormData.startsWith("data:application/pdf") ? (
+                <iframe
+                  src={activeForm.customFormData}
+                  className="w-full rounded-b-lg"
+                  style={{ height: "70vh", border: "none" }}
+                  title={activeForm.customFormName ?? "Form"}
+                />
+              ) : (
+                <img
+                  src={activeForm.customFormData}
+                  alt={activeForm.customFormName ?? "Form"}
+                  className="w-full rounded-b-lg object-contain max-h-[70vh]"
+                />
+              )}
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="p-6 space-y-5">
+              {fields.map((field) => (
+                <div key={field.key} className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">{field.label}</label>
+                  {field.type === "yesno" ? (
+                    <div className="flex gap-2">
+                      {["yes", "no"].map((v) => (
+                        <button
+                          key={v}
+                          onClick={() => setFormValues((prev) => ({ ...prev, [field.key]: v }))}
+                          className={`px-5 py-2 rounded-md border text-sm font-medium transition-colors ${
+                            formValues[field.key] === v
+                              ? v === "yes" ? "bg-green-600 border-green-600 text-white" : "bg-red-500 border-red-500 text-white"
+                              : "border-border text-muted-foreground hover:bg-muted"
+                          }`}
+                        >
+                          {v === "yes" ? "✓ Yes" : "✗ No"}
+                        </button>
+                      ))}
+                    </div>
+                  ) : field.type === "textarea" ? (
+                    <textarea
+                      className="w-full min-h-[80px] px-3 py-2 text-sm border border-border rounded-md bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      placeholder="Enter details…"
+                      value={formValues[field.key] ?? ""}
+                      onChange={(e) => setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                    />
+                  ) : (
+                    <input
+                      className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      placeholder="Enter value…"
+                      value={formValues[field.key] ?? ""}
+                      onChange={(e) => setFormValues((prev) => ({ ...prev, [field.key]: e.target.value }))}
+                    />
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Electronic Signature */}
         <Card>
@@ -1637,11 +1694,28 @@ function JobFormsTab({ jobId }: { jobId: number }) {
         <p className="text-sm text-muted-foreground">
           {(forms as JobFormRecord[]).length === 0 ? "No forms yet" : `${(forms as JobFormRecord[]).length} form${(forms as JobFormRecord[]).length !== 1 ? "s" : ""}`}
         </p>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
           <Button
             variant="outline"
             size="sm"
-            disabled={isCreating}
+            disabled={isCreating || isUploading}
+            onClick={() => fileInputRef.current?.click()}
+            className="gap-1.5"
+          >
+            <Package className="h-3.5 w-3.5" />
+            {isUploading ? "Uploading…" : "Upload Form"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isCreating || isUploading}
             onClick={() => createForm({ id: jobId, data: { formType: "quality_control" } })}
             className="gap-1.5"
           >
@@ -1650,7 +1724,7 @@ function JobFormsTab({ jobId }: { jobId: number }) {
           </Button>
           <Button
             size="sm"
-            disabled={isCreating}
+            disabled={isCreating || isUploading}
             onClick={() => createForm({ id: jobId, data: { formType: "job_completion" } })}
             className="gap-1.5"
           >
@@ -1664,7 +1738,7 @@ function JobFormsTab({ jobId }: { jobId: number }) {
         <Card className="p-12 text-center">
           <PenLine className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
           <p className="font-medium mb-1">No forms yet</p>
-          <p className="text-sm text-muted-foreground">Create a Job Completion or Quality Control form above.</p>
+          <p className="text-sm text-muted-foreground">Upload your own form, or start a Job Completion / QC Checklist above.</p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -1687,7 +1761,9 @@ function JobFormsTab({ jobId }: { jobId: number }) {
                       </div>
                       <div className="min-w-0">
                         <p className="font-medium text-sm">
-                          {form.formType === "job_completion" ? "Job Completion Form" : "Quality Control Checklist"}
+                          {form.formType === "job_completion" ? "Job Completion Form"
+                            : form.formType === "quality_control" ? "Quality Control Checklist"
+                            : form.customFormName ?? "Uploaded Form"}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {isSigned
@@ -1703,7 +1779,7 @@ function JobFormsTab({ jobId }: { jobId: number }) {
                       </Badge>
                       {!isSigned && (
                         <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => { setActiveFormId(form.id); setFormValues(parsed); setView("fill"); }}>
-                          <PenLine className="h-3 w-3" /> Fill
+                          <PenLine className="h-3 w-3" /> {form.formType === "custom" ? "Sign" : "Fill"}
                         </Button>
                       )}
                       {isSigned && (
@@ -1720,14 +1796,30 @@ function JobFormsTab({ jobId }: { jobId: number }) {
 
                   {isExpanded && isSigned && (
                     <div className="mt-4 pt-4 border-t space-y-3">
-                      {fieldDefs.map((fd) => (
-                        <div key={fd.key} className="flex items-start justify-between gap-4 text-sm">
-                          <span className="text-muted-foreground shrink-0 w-64">{fd.label}</span>
-                          <span className={`font-medium text-right ${parsed[fd.key] === "yes" ? "text-green-600" : parsed[fd.key] === "no" ? "text-red-500" : ""}`}>
-                            {parsed[fd.key] === "yes" ? "✓ Yes" : parsed[fd.key] === "no" ? "✗ No" : parsed[fd.key] || "—"}
-                          </span>
-                        </div>
-                      ))}
+                      {form.formType === "custom" ? (
+                        <>
+                          {form.customFormData && (
+                            form.customFormData.startsWith("data:application/pdf") ? (
+                              <div className="flex items-center gap-2 p-3 rounded-md bg-muted/30 text-sm">
+                                <FileText className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground">{form.customFormName}</span>
+                                <a href={form.customFormData} download={form.customFormName} className="ml-auto text-primary text-xs font-medium hover:underline">Download</a>
+                              </div>
+                            ) : (
+                              <img src={form.customFormData} alt={form.customFormName ?? "Form"} className="w-full max-h-48 object-contain rounded-md border" />
+                            )
+                          )}
+                        </>
+                      ) : (
+                        fieldDefs.map((fd) => (
+                          <div key={fd.key} className="flex items-start justify-between gap-4 text-sm">
+                            <span className="text-muted-foreground shrink-0 w-64">{fd.label}</span>
+                            <span className={`font-medium text-right ${parsed[fd.key] === "yes" ? "text-green-600" : parsed[fd.key] === "no" ? "text-red-500" : ""}`}>
+                              {parsed[fd.key] === "yes" ? "✓ Yes" : parsed[fd.key] === "no" ? "✗ No" : parsed[fd.key] || "—"}
+                            </span>
+                          </div>
+                        ))
+                      )}
                       <div className="mt-3 pt-3 border-t flex items-center gap-2 text-sm">
                         <PenLine className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="text-muted-foreground">Signed by:</span>

@@ -12,4 +12,5 @@ export type JobFormFormType =
 export const JobFormFormType = {
   job_completion: "job_completion",
   quality_control: "quality_control",
+  custom: "custom",
 } as const;

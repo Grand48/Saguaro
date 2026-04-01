@@ -485,6 +485,7 @@ export type JobFormFormType =
 export const JobFormFormType = {
   job_completion: "job_completion",
   quality_control: "quality_control",
+  custom: "custom",
 } as const;
 
 export type JobFormStatus = (typeof JobFormStatus)[keyof typeof JobFormStatus];
@@ -501,6 +502,10 @@ export interface JobForm {
   status: JobFormStatus;
   /** JSON-encoded field values */
   fields?: string | null;
+  /** File name of the uploaded custom form */
+  customFormName?: string | null;
+  /** Base64-encoded PDF or image of the uploaded form */
+  customFormData?: string | null;
   signatureName?: string | null;
   /** SVG path data for the hand-drawn signature */
   signatureData?: string | null;
@@ -516,10 +521,15 @@ export type CreateJobFormInputFormType =
 export const CreateJobFormInputFormType = {
   job_completion: "job_completion",
   quality_control: "quality_control",
+  custom: "custom",
 } as const;
 
 export interface CreateJobFormInput {
   formType: CreateJobFormInputFormType;
+  /** File name of uploaded form (required when formType is custom) */
+  customFormName?: string;
+  /** Base64-encoded PDF or image data URI (required when formType is custom) */
+  customFormData?: string;
 }
 
 export type SubmitJobFormInputFields = { [key: string]: string };

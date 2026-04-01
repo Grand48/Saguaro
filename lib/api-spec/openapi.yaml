@@ -2279,7 +2279,7 @@ components:
           type: integer
         formType:
           type: string
-          enum: [job_completion, quality_control]
+          enum: [job_completion, quality_control, custom]
         status:
           type: string
           enum: [draft, signed]
@@ -2287,6 +2287,14 @@ components:
           type: string
           nullable: true
           description: JSON-encoded field values
+        customFormName:
+          type: string
+          nullable: true
+          description: File name of the uploaded custom form
+        customFormData:
+          type: string
+          nullable: true
+          description: Base64-encoded PDF or image of the uploaded form
         signatureName:
           type: string
           nullable: true
@@ -2320,7 +2328,13 @@ components:
       properties:
         formType:
           type: string
-          enum: [job_completion, quality_control]
+          enum: [job_completion, quality_control, custom]
+        customFormName:
+          type: string
+          description: File name of uploaded form (required when formType is custom)
+        customFormData:
+          type: string
+          description: Base64-encoded PDF or image data URI (required when formType is custom)
       required:
         - formType
 

@@ -27,12 +27,14 @@ router.post("/jobs/:id/forms", async (req, res) => {
   try {
     const jobId = Number(req.params.id);
     const schema = z.object({
-      formType: z.enum(["job_completion", "quality_control"]),
+      formType: z.enum(["job_completion", "quality_control", "custom"]),
+      customFormName: z.string().optional(),
+      customFormData: z.string().optional(),
     });
-    const { formType } = schema.parse(req.body);
+    const { formType, customFormName, customFormData } = schema.parse(req.body);
     const [form] = await db
       .insert(jobFormsTable)
-      .values({ jobId, formType, status: "draft" })
+      .values({ jobId, formType, status: "draft", customFormName, customFormData })
       .returning();
     res.status(201).json({ ...form, signedByCrew: null });
   } catch (err) {
