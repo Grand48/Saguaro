@@ -22,6 +22,7 @@ import type {
   CreateEquipmentInput,
   CreateJobInput,
   CreateLocationInput,
+  CreateNotificationInput,
   CreateTaskInput,
   CreateTimeOffInput,
   CrewDocument,
@@ -29,13 +30,18 @@ import type {
   DashboardSummary,
   Equipment,
   ErrorResponse,
+  GetCrewUnreadCount200,
   HealthStatus,
   Job,
   JobDetail,
   Location,
   LocationDetail,
   LocationWithJobs,
+  MarkNotificationReadBody,
   Message,
+  Notification,
+  NotificationWithReadStatus,
+  NotificationWithStats,
   Photo,
   SendMessageInput,
   Task,
@@ -2823,6 +2829,519 @@ export const useDeleteEquipment = <
 > => {
   return useMutation(getDeleteEquipmentMutationOptions(options));
 };
+
+/**
+ * @summary List all notifications with read counts (admin view)
+ */
+export const getListNotificationsUrl = () => {
+  return `/api/notifications`;
+};
+
+export const listNotifications = async (
+  options?: RequestInit,
+): Promise<NotificationWithStats[]> => {
+  return customFetch<NotificationWithStats[]>(getListNotificationsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListNotificationsQueryKey = () => {
+  return [`/api/notifications`] as const;
+};
+
+export const getListNotificationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listNotifications>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNotifications>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListNotificationsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listNotifications>>
+  > = ({ signal }) => listNotifications({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listNotifications>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListNotificationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listNotifications>>
+>;
+export type ListNotificationsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all notifications with read counts (admin view)
+ */
+
+export function useListNotifications<
+  TData = Awaited<ReturnType<typeof listNotifications>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNotifications>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListNotificationsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Broadcast a notification to all crew
+ */
+export const getCreateNotificationUrl = () => {
+  return `/api/notifications`;
+};
+
+export const createNotification = async (
+  createNotificationInput: CreateNotificationInput,
+  options?: RequestInit,
+): Promise<Notification> => {
+  return customFetch<Notification>(getCreateNotificationUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createNotificationInput),
+  });
+};
+
+export const getCreateNotificationMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNotification>>,
+    TError,
+    { data: BodyType<CreateNotificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createNotification>>,
+  TError,
+  { data: BodyType<CreateNotificationInput> },
+  TContext
+> => {
+  const mutationKey = ["createNotification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createNotification>>,
+    { data: BodyType<CreateNotificationInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createNotification(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateNotificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createNotification>>
+>;
+export type CreateNotificationMutationBody = BodyType<CreateNotificationInput>;
+export type CreateNotificationMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Broadcast a notification to all crew
+ */
+export const useCreateNotification = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNotification>>,
+    TError,
+    { data: BodyType<CreateNotificationInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createNotification>>,
+  TError,
+  { data: BodyType<CreateNotificationInput> },
+  TContext
+> => {
+  return useMutation(getCreateNotificationMutationOptions(options));
+};
+
+/**
+ * @summary Delete a notification
+ */
+export const getDeleteNotificationUrl = (id: number) => {
+  return `/api/notifications/${id}`;
+};
+
+export const deleteNotification = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteNotificationUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteNotificationMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteNotification>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteNotification>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteNotification"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteNotification>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteNotification(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteNotificationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteNotification>>
+>;
+
+export type DeleteNotificationMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a notification
+ */
+export const useDeleteNotification = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteNotification>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteNotification>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteNotificationMutationOptions(options));
+};
+
+/**
+ * @summary Mark a notification as read for a crew member
+ */
+export const getMarkNotificationReadUrl = (id: number) => {
+  return `/api/notifications/${id}/read`;
+};
+
+export const markNotificationRead = async (
+  id: number,
+  markNotificationReadBody: MarkNotificationReadBody,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getMarkNotificationReadUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(markNotificationReadBody),
+  });
+};
+
+export const getMarkNotificationReadMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markNotificationRead>>,
+    TError,
+    { id: number; data: BodyType<MarkNotificationReadBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof markNotificationRead>>,
+  TError,
+  { id: number; data: BodyType<MarkNotificationReadBody> },
+  TContext
+> => {
+  const mutationKey = ["markNotificationRead"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof markNotificationRead>>,
+    { id: number; data: BodyType<MarkNotificationReadBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return markNotificationRead(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MarkNotificationReadMutationResult = NonNullable<
+  Awaited<ReturnType<typeof markNotificationRead>>
+>;
+export type MarkNotificationReadMutationBody =
+  BodyType<MarkNotificationReadBody>;
+export type MarkNotificationReadMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Mark a notification as read for a crew member
+ */
+export const useMarkNotificationRead = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markNotificationRead>>,
+    TError,
+    { id: number; data: BodyType<MarkNotificationReadBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof markNotificationRead>>,
+  TError,
+  { id: number; data: BodyType<MarkNotificationReadBody> },
+  TContext
+> => {
+  return useMutation(getMarkNotificationReadMutationOptions(options));
+};
+
+/**
+ * @summary Get notifications for a crew member with read status
+ */
+export const getGetCrewNotificationsUrl = (crewId: number) => {
+  return `/api/notifications/crew/${crewId}`;
+};
+
+export const getCrewNotifications = async (
+  crewId: number,
+  options?: RequestInit,
+): Promise<NotificationWithReadStatus[]> => {
+  return customFetch<NotificationWithReadStatus[]>(
+    getGetCrewNotificationsUrl(crewId),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetCrewNotificationsQueryKey = (crewId: number) => {
+  return [`/api/notifications/crew/${crewId}`] as const;
+};
+
+export const getGetCrewNotificationsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCrewNotifications>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCrewNotifications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCrewNotificationsQueryKey(crewId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCrewNotifications>>
+  > = ({ signal }) =>
+    getCrewNotifications(crewId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!crewId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCrewNotifications>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCrewNotificationsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCrewNotifications>>
+>;
+export type GetCrewNotificationsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get notifications for a crew member with read status
+ */
+
+export function useGetCrewNotifications<
+  TData = Awaited<ReturnType<typeof getCrewNotifications>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCrewNotifications>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCrewNotificationsQueryOptions(crewId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get unread notification count for a crew member
+ */
+export const getGetCrewUnreadCountUrl = (crewId: number) => {
+  return `/api/notifications/crew/${crewId}/unread-count`;
+};
+
+export const getCrewUnreadCount = async (
+  crewId: number,
+  options?: RequestInit,
+): Promise<GetCrewUnreadCount200> => {
+  return customFetch<GetCrewUnreadCount200>(getGetCrewUnreadCountUrl(crewId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCrewUnreadCountQueryKey = (crewId: number) => {
+  return [`/api/notifications/crew/${crewId}/unread-count`] as const;
+};
+
+export const getGetCrewUnreadCountQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCrewUnreadCount>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCrewUnreadCount>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetCrewUnreadCountQueryKey(crewId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCrewUnreadCount>>
+  > = ({ signal }) => getCrewUnreadCount(crewId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!crewId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCrewUnreadCount>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCrewUnreadCountQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCrewUnreadCount>>
+>;
+export type GetCrewUnreadCountQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get unread notification count for a crew member
+ */
+
+export function useGetCrewUnreadCount<
+  TData = Awaited<ReturnType<typeof getCrewUnreadCount>>,
+  TError = ErrorType<unknown>,
+>(
+  crewId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getCrewUnreadCount>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCrewUnreadCountQueryOptions(crewId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List documents for a crew member (metadata only, no file data)

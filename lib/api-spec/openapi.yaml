@@ -25,6 +25,8 @@ tags:
     description: Job equipment requirement operations
   - name: crew-documents
     description: Crew member training documents and certificates
+  - name: notifications
+    description: Universal crew notifications
   - name: time-off
     description: Time-off request operations
   - name: dashboard
@@ -677,6 +679,123 @@ paths:
         "204":
           description: Deleted
 
+  # ─── NOTIFICATIONS ───────────────────────────────────────────────────────────
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List all notifications with read counts (admin view)
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationWithStats"
+    post:
+      operationId: createNotification
+      tags: [notifications]
+      summary: Broadcast a notification to all crew
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNotificationInput"
+      responses:
+        "201":
+          description: Created notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  /notifications/{id}:
+    delete:
+      operationId: deleteNotification
+      tags: [notifications]
+      summary: Delete a notification
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a notification as read for a crew member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                crewId:
+                  type: integer
+              required: [crewId]
+      responses:
+        "200":
+          description: Marked as read
+
+  /notifications/crew/{crewId}:
+    get:
+      operationId: getCrewNotifications
+      tags: [notifications]
+      summary: Get notifications for a crew member with read status
+      parameters:
+        - name: crewId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of notifications with read status
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationWithReadStatus"
+
+  /notifications/crew/{crewId}/unread-count:
+    get:
+      operationId: getCrewUnreadCount
+      tags: [notifications]
+      summary: Get unread notification count for a crew member
+      parameters:
+        - name: crewId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unread:
+                    type: integer
+                required: [unread]
+
   # ─── CREW DOCUMENTS ──────────────────────────────────────────────────────────
   /crew/{crewId}/documents:
     get:
@@ -875,6 +994,59 @@ paths:
 
 components:
   schemas:
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, message, priority, createdBy, createdAt]
+
+    NotificationWithStats:
+      allOf:
+        - $ref: "#/components/schemas/Notification"
+        - type: object
+          properties:
+            readCount:
+              type: integer
+            totalCrew:
+              type: integer
+          required: [readCount, totalCrew]
+
+    NotificationWithReadStatus:
+      allOf:
+        - $ref: "#/components/schemas/Notification"
+        - type: object
+          properties:
+            isRead:
+              type: boolean
+          required: [isRead]
+
+    CreateNotificationInput:
+      type: object
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+        priority:
+          type: string
+          enum: [low, normal, high, urgent]
+        createdBy:
+          type: string
+      required: [title, message]
+
     CrewDocument:
       type: object
       properties:

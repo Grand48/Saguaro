@@ -1,18 +1,54 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Hammer, Users, Calendar, MapPin, CalendarOff, Menu } from "lucide-react";
+import { Hammer, Users, Calendar, MapPin, CalendarOff, Menu, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { useGetCrewUnreadCount } from "@workspace/api-client-react";
+
+function useStoredCrewId() {
+  const [crewId, setCrewId] = useState<number | null>(() => {
+    const v = localStorage.getItem("cc_crew_id");
+    return v ? parseInt(v) : null;
+  });
+  useEffect(() => {
+    const onStorage = () => {
+      const v = localStorage.getItem("cc_crew_id");
+      setCrewId(v ? parseInt(v) : null);
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("cc_crew_id_changed", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("cc_crew_id_changed", onStorage);
+    };
+  }, []);
+  return crewId;
+}
+
+function UnreadBadge({ crewId }: { crewId: number }) {
+  const { data } = useGetCrewUnreadCount(crewId, {
+    query: { refetchInterval: 30000, retry: false },
+  });
+  if (!data || data.unread === 0) return null;
+  return (
+    <Badge className="ml-auto h-5 px-1.5 min-w-[20px] text-xs bg-destructive text-destructive-foreground">
+      {data.unread > 9 ? "9+" : data.unread}
+    </Badge>
+  );
+}
 
 const NavItems = () => {
   const [location] = useLocation();
-  
+  const crewId = useStoredCrewId();
+
   const navLinks = [
     { href: "/", label: "Dashboard", icon: Calendar },
     { href: "/jobs", label: "Jobs", icon: Hammer },
     { href: "/crew", label: "Crew", icon: Users },
     { href: "/locations", label: "Locations", icon: MapPin },
     { href: "/time-off", label: "Time Off", icon: CalendarOff },
+    { href: "/notifications", label: "Notifications", icon: Bell },
   ];
 
   return (
@@ -20,9 +56,14 @@ const NavItems = () => {
       {navLinks.map((link) => {
         const isActive = location === link.href || (link.href !== "/" && location.startsWith(link.href));
         return (
-          <Link key={link.href} href={link.href} className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium ${isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
-            <link.icon className="h-4 w-4" />
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors text-sm font-medium ${isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
+          >
+            <link.icon className="h-4 w-4 shrink-0" />
             {link.label}
+            {link.href === "/notifications" && crewId && <UnreadBadge crewId={crewId} />}
           </Link>
         );
       })}

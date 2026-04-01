@@ -618,6 +618,92 @@ export const DeleteEquipmentParams = zod.object({
 });
 
 /**
+ * @summary List all notifications with read counts (admin view)
+ */
+export const ListNotificationsResponseItem = zod
+  .object({
+    id: zod.number(),
+    title: zod.string(),
+    message: zod.string(),
+    priority: zod.enum(["low", "normal", "high", "urgent"]),
+    createdBy: zod.string(),
+    createdAt: zod.coerce.date(),
+  })
+  .and(
+    zod.object({
+      readCount: zod.number(),
+      totalCrew: zod.number(),
+    }),
+  );
+export const ListNotificationsResponse = zod.array(
+  ListNotificationsResponseItem,
+);
+
+/**
+ * @summary Broadcast a notification to all crew
+ */
+export const CreateNotificationBody = zod.object({
+  title: zod.string(),
+  message: zod.string(),
+  priority: zod.enum(["low", "normal", "high", "urgent"]).optional(),
+  createdBy: zod.string().optional(),
+});
+
+/**
+ * @summary Delete a notification
+ */
+export const DeleteNotificationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Mark a notification as read for a crew member
+ */
+export const MarkNotificationReadParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const MarkNotificationReadBody = zod.object({
+  crewId: zod.number(),
+});
+
+/**
+ * @summary Get notifications for a crew member with read status
+ */
+export const GetCrewNotificationsParams = zod.object({
+  crewId: zod.coerce.number(),
+});
+
+export const GetCrewNotificationsResponseItem = zod
+  .object({
+    id: zod.number(),
+    title: zod.string(),
+    message: zod.string(),
+    priority: zod.enum(["low", "normal", "high", "urgent"]),
+    createdBy: zod.string(),
+    createdAt: zod.coerce.date(),
+  })
+  .and(
+    zod.object({
+      isRead: zod.boolean(),
+    }),
+  );
+export const GetCrewNotificationsResponse = zod.array(
+  GetCrewNotificationsResponseItem,
+);
+
+/**
+ * @summary Get unread notification count for a crew member
+ */
+export const GetCrewUnreadCountParams = zod.object({
+  crewId: zod.coerce.number(),
+});
+
+export const GetCrewUnreadCountResponse = zod.object({
+  unread: zod.number(),
+});
+
+/**
  * @summary List documents for a crew member (metadata only, no file data)
  */
 export const ListCrewDocumentsParams = zod.object({

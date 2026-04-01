@@ -5,6 +5,51 @@
  * Crew Scheduler API
  * OpenAPI spec version: 0.1.0
  */
+export type NotificationPriority =
+  (typeof NotificationPriority)[keyof typeof NotificationPriority];
+
+export const NotificationPriority = {
+  low: "low",
+  normal: "normal",
+  high: "high",
+  urgent: "urgent",
+} as const;
+
+export interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  priority: NotificationPriority;
+  createdBy: string;
+  createdAt: string;
+}
+
+export type NotificationWithStats = Notification & {
+  readCount: number;
+  totalCrew: number;
+};
+
+export type NotificationWithReadStatus = Notification & {
+  isRead: boolean;
+};
+
+export type CreateNotificationInputPriority =
+  (typeof CreateNotificationInputPriority)[keyof typeof CreateNotificationInputPriority];
+
+export const CreateNotificationInputPriority = {
+  low: "low",
+  normal: "normal",
+  high: "high",
+  urgent: "urgent",
+} as const;
+
+export interface CreateNotificationInput {
+  title: string;
+  message: string;
+  priority?: CreateNotificationInputPriority;
+  createdBy?: string;
+}
+
 export type CrewDocumentDocType =
   (typeof CrewDocumentDocType)[keyof typeof CrewDocumentDocType];
 
@@ -391,3 +436,11 @@ export interface DashboardSummary {
   pendingTasks: number;
   completedTasks: number;
 }
+
+export type MarkNotificationReadBody = {
+  crewId: number;
+};
+
+export type GetCrewUnreadCount200 = {
+  unread: number;
+};
