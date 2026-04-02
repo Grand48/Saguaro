@@ -1458,6 +1458,175 @@ paths:
         "204":
           description: Deleted
 
+  /vehicles:
+    get:
+      operationId: listVehicles
+      tags: [vehicles]
+      summary: List all company vehicles
+      responses:
+        "200":
+          description: List of vehicles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vehicle"
+    post:
+      operationId: createVehicle
+      tags: [vehicles]
+      summary: Create a vehicle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVehicleInput"
+      responses:
+        "201":
+          description: Created vehicle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+
+  /vehicles/{id}:
+    get:
+      operationId: getVehicle
+      tags: [vehicles]
+      summary: Get a vehicle by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Vehicle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+    put:
+      operationId: updateVehicle
+      tags: [vehicles]
+      summary: Update a vehicle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVehicleInput"
+      responses:
+        "200":
+          description: Updated vehicle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vehicle"
+    delete:
+      operationId: deleteVehicle
+      tags: [vehicles]
+      summary: Delete a vehicle and its maintenance records
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
+  /vehicles/{id}/maintenance:
+    get:
+      operationId: listVehicleMaintenance
+      tags: [vehicles]
+      summary: List maintenance records for a vehicle
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Maintenance records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VehicleMaintenance"
+    post:
+      operationId: createVehicleMaintenance
+      tags: [vehicles]
+      summary: Add a maintenance record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateVehicleMaintenanceInput"
+      responses:
+        "201":
+          description: Created maintenance record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VehicleMaintenance"
+
+  /maintenance/{id}:
+    put:
+      operationId: updateVehicleMaintenance
+      tags: [vehicles]
+      summary: Update a maintenance record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateVehicleMaintenanceInput"
+      responses:
+        "200":
+          description: Updated maintenance record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VehicleMaintenance"
+    delete:
+      operationId: deleteVehicleMaintenance
+      tags: [vehicles]
+      summary: Delete a maintenance record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+
   /side-quests:
     get:
       operationId: listSideQuests
@@ -2636,6 +2805,188 @@ components:
           type: string
         checkOut:
           type: string
+        notes:
+          type: string
+          nullable: true
+
+    Vehicle:
+      type: object
+      properties:
+        id:
+          type: integer
+        vehicleNumber:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: string
+          nullable: true
+        licensePlate:
+          type: string
+        assignedTo:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - vehicleNumber
+        - make
+        - model
+        - licensePlate
+        - createdAt
+
+    CreateVehicleInput:
+      type: object
+      properties:
+        vehicleNumber:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: string
+          nullable: true
+        licensePlate:
+          type: string
+        assignedTo:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+        - vehicleNumber
+        - make
+        - model
+        - licensePlate
+
+    UpdateVehicleInput:
+      type: object
+      properties:
+        vehicleNumber:
+          type: string
+        make:
+          type: string
+        model:
+          type: string
+        year:
+          type: string
+          nullable: true
+        licensePlate:
+          type: string
+        assignedTo:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    VehicleMaintenance:
+      type: object
+      properties:
+        id:
+          type: integer
+        vehicleId:
+          type: integer
+        type:
+          type: string
+        status:
+          type: string
+          enum: [completed, upcoming, needed]
+        scheduledDate:
+          type: string
+          nullable: true
+          description: ISO date string (YYYY-MM-DD)
+        completedDate:
+          type: string
+          nullable: true
+          description: ISO date string (YYYY-MM-DD)
+        mileage:
+          type: integer
+          nullable: true
+        cost:
+          type: string
+          nullable: true
+        performedBy:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - vehicleId
+        - type
+        - status
+        - createdAt
+
+    CreateVehicleMaintenanceInput:
+      type: object
+      properties:
+        vehicleId:
+          type: integer
+        type:
+          type: string
+        status:
+          type: string
+          enum: [completed, upcoming, needed]
+        scheduledDate:
+          type: string
+          nullable: true
+        completedDate:
+          type: string
+          nullable: true
+        mileage:
+          type: integer
+          nullable: true
+        cost:
+          type: string
+          nullable: true
+        performedBy:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+        - vehicleId
+        - type
+        - status
+
+    UpdateVehicleMaintenanceInput:
+      type: object
+      properties:
+        vehicleId:
+          type: integer
+        type:
+          type: string
+        status:
+          type: string
+          enum: [completed, upcoming, needed]
+        scheduledDate:
+          type: string
+          nullable: true
+        completedDate:
+          type: string
+          nullable: true
+        mileage:
+          type: integer
+          nullable: true
+        cost:
+          type: string
+          nullable: true
+        performedBy:
+          type: string
+          nullable: true
         notes:
           type: string
           nullable: true

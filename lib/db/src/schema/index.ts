@@ -14,3 +14,4 @@ export * from "./side-quests";
 export * from "./employee-requests";
 export * from "./job-forms";
 export * from "./lodging";
+export * from "./vehicles";

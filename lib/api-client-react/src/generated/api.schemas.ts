@@ -718,6 +718,105 @@ export interface UpdateLodgingBookingInput {
   notes?: string | null;
 }
 
+export interface Vehicle {
+  id: number;
+  vehicleNumber: string;
+  make: string;
+  model: string;
+  year?: string | null;
+  licensePlate: string;
+  assignedTo?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface CreateVehicleInput {
+  vehicleNumber: string;
+  make: string;
+  model: string;
+  year?: string | null;
+  licensePlate: string;
+  assignedTo?: string | null;
+  notes?: string | null;
+}
+
+export interface UpdateVehicleInput {
+  vehicleNumber?: string;
+  make?: string;
+  model?: string;
+  year?: string | null;
+  licensePlate?: string;
+  assignedTo?: string | null;
+  notes?: string | null;
+}
+
+export type VehicleMaintenanceStatus =
+  (typeof VehicleMaintenanceStatus)[keyof typeof VehicleMaintenanceStatus];
+
+export const VehicleMaintenanceStatus = {
+  completed: "completed",
+  upcoming: "upcoming",
+  needed: "needed",
+} as const;
+
+export interface VehicleMaintenance {
+  id: number;
+  vehicleId: number;
+  type: string;
+  status: VehicleMaintenanceStatus;
+  /** ISO date string (YYYY-MM-DD) */
+  scheduledDate?: string | null;
+  /** ISO date string (YYYY-MM-DD) */
+  completedDate?: string | null;
+  mileage?: number | null;
+  cost?: string | null;
+  performedBy?: string | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export type CreateVehicleMaintenanceInputStatus =
+  (typeof CreateVehicleMaintenanceInputStatus)[keyof typeof CreateVehicleMaintenanceInputStatus];
+
+export const CreateVehicleMaintenanceInputStatus = {
+  completed: "completed",
+  upcoming: "upcoming",
+  needed: "needed",
+} as const;
+
+export interface CreateVehicleMaintenanceInput {
+  vehicleId: number;
+  type: string;
+  status: CreateVehicleMaintenanceInputStatus;
+  scheduledDate?: string | null;
+  completedDate?: string | null;
+  mileage?: number | null;
+  cost?: string | null;
+  performedBy?: string | null;
+  notes?: string | null;
+}
+
+export type UpdateVehicleMaintenanceInputStatus =
+  (typeof UpdateVehicleMaintenanceInputStatus)[keyof typeof UpdateVehicleMaintenanceInputStatus];
+
+export const UpdateVehicleMaintenanceInputStatus = {
+  completed: "completed",
+  upcoming: "upcoming",
+  needed: "needed",
+} as const;
+
+export interface UpdateVehicleMaintenanceInput {
+  vehicleId?: number;
+  type?: string;
+  status?: UpdateVehicleMaintenanceInputStatus;
+  scheduledDate?: string | null;
+  completedDate?: string | null;
+  mileage?: number | null;
+  cost?: string | null;
+  performedBy?: string | null;
+  notes?: string | null;
+}
+
 export interface DashboardSummary {
   totalJobs: number;
   activeJobs: number;

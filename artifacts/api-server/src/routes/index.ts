@@ -17,6 +17,7 @@ import sideQuestsRouter from "./side-quests";
 import employeeRequestsRouter from "./employee-requests";
 import jobFormsRouter from "./job-forms";
 import lodgingRouter from "./lodging";
+import vehiclesRouter from "./vehicles";
 
 const router: IRouter = Router();
 
@@ -38,5 +39,6 @@ router.use(sideQuestsRouter);
 router.use(employeeRequestsRouter);
 router.use(jobFormsRouter);
 router.use(lodgingRouter);
+router.use(vehiclesRouter);
 
 export default router;

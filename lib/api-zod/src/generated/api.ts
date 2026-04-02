@@ -1379,6 +1379,185 @@ export const DeleteLodgingBookingParams = zod.object({
 });
 
 /**
+ * @summary List all company vehicles
+ */
+export const ListVehiclesResponseItem = zod.object({
+  id: zod.number(),
+  vehicleNumber: zod.string(),
+  make: zod.string(),
+  model: zod.string(),
+  year: zod.string().nullish(),
+  licensePlate: zod.string(),
+  assignedTo: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+export const ListVehiclesResponse = zod.array(ListVehiclesResponseItem);
+
+/**
+ * @summary Create a vehicle
+ */
+export const CreateVehicleBody = zod.object({
+  vehicleNumber: zod.string(),
+  make: zod.string(),
+  model: zod.string(),
+  year: zod.string().nullish(),
+  licensePlate: zod.string(),
+  assignedTo: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Get a vehicle by ID
+ */
+export const GetVehicleParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetVehicleResponse = zod.object({
+  id: zod.number(),
+  vehicleNumber: zod.string(),
+  make: zod.string(),
+  model: zod.string(),
+  year: zod.string().nullish(),
+  licensePlate: zod.string(),
+  assignedTo: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Update a vehicle
+ */
+export const UpdateVehicleParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateVehicleBody = zod.object({
+  vehicleNumber: zod.string().optional(),
+  make: zod.string().optional(),
+  model: zod.string().optional(),
+  year: zod.string().nullish(),
+  licensePlate: zod.string().optional(),
+  assignedTo: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateVehicleResponse = zod.object({
+  id: zod.number(),
+  vehicleNumber: zod.string(),
+  make: zod.string(),
+  model: zod.string(),
+  year: zod.string().nullish(),
+  licensePlate: zod.string(),
+  assignedTo: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Delete a vehicle and its maintenance records
+ */
+export const DeleteVehicleParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List maintenance records for a vehicle
+ */
+export const ListVehicleMaintenanceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListVehicleMaintenanceResponseItem = zod.object({
+  id: zod.number(),
+  vehicleId: zod.number(),
+  type: zod.string(),
+  status: zod.enum(["completed", "upcoming", "needed"]),
+  scheduledDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date string (YYYY-MM-DD)"),
+  completedDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date string (YYYY-MM-DD)"),
+  mileage: zod.number().nullish(),
+  cost: zod.string().nullish(),
+  performedBy: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+export const ListVehicleMaintenanceResponse = zod.array(
+  ListVehicleMaintenanceResponseItem,
+);
+
+/**
+ * @summary Add a maintenance record
+ */
+export const CreateVehicleMaintenanceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateVehicleMaintenanceBody = zod.object({
+  vehicleId: zod.number(),
+  type: zod.string(),
+  status: zod.enum(["completed", "upcoming", "needed"]),
+  scheduledDate: zod.string().nullish(),
+  completedDate: zod.string().nullish(),
+  mileage: zod.number().nullish(),
+  cost: zod.string().nullish(),
+  performedBy: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Update a maintenance record
+ */
+export const UpdateVehicleMaintenanceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateVehicleMaintenanceBody = zod.object({
+  vehicleId: zod.number().optional(),
+  type: zod.string().optional(),
+  status: zod.enum(["completed", "upcoming", "needed"]).optional(),
+  scheduledDate: zod.string().nullish(),
+  completedDate: zod.string().nullish(),
+  mileage: zod.number().nullish(),
+  cost: zod.string().nullish(),
+  performedBy: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateVehicleMaintenanceResponse = zod.object({
+  id: zod.number(),
+  vehicleId: zod.number(),
+  type: zod.string(),
+  status: zod.enum(["completed", "upcoming", "needed"]),
+  scheduledDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date string (YYYY-MM-DD)"),
+  completedDate: zod
+    .string()
+    .nullish()
+    .describe("ISO date string (YYYY-MM-DD)"),
+  mileage: zod.number().nullish(),
+  cost: zod.string().nullish(),
+  performedBy: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Delete a maintenance record
+ */
+export const DeleteVehicleMaintenanceParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
  * @summary List all side quests
  */
 export const ListSideQuestsResponseItem = zod.object({

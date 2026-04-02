@@ -17,6 +17,7 @@ import TimeClock from "./pages/time-clock/index";
 import SideQuests from "./pages/quests/index";
 import EmployeeRequests from "./pages/requests/index";
 import Lodging from "./pages/lodging/index";
+import Vehicles from "./pages/vehicles/index";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ function Router() {
         <Route path="/quests" component={SideQuests} />
         <Route path="/requests" component={EmployeeRequests} />
         <Route path="/lodging" component={Lodging} />
+        <Route path="/vehicles" component={Vehicles} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

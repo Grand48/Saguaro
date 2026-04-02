@@ -141,6 +141,18 @@ Tracks room bookings for company lodging rooms C1–C10.
 - **Export**: "Export CSV" downloads a `.csv`; "Email Report" opens mailto with the report in the body
 - **CSV columns**: Room, Guest Name, Check-In, Check-Out, Nights Stayed, Notes
 
+## Company Vehicles Feature
+
+Fleet management with maintenance tracking.
+
+- **Route**: `/vehicles` — vehicle cards grid + selected vehicle maintenance detail panel
+- **DB tables**: `vehicles` (vehicleNumber, make, model, year, licensePlate, assignedTo, notes), `vehicle_maintenance` (vehicleId, type, status, scheduledDate, completedDate, mileage, cost, performedBy, notes)
+- **API**: Full CRUD at `/api/vehicles` and `/api/vehicles/:id/maintenance`; single-record at `/api/maintenance/:id`
+- **Status types**: `needed` (red), `upcoming` (yellow), `completed` (green)
+- **Export**: Download CSV (vehicles + all maintenance records) and Spreadsheet + Email (downloads CSV + opens mailto)
+- **Card badges**: Each vehicle card shows live counts of needed/upcoming maintenance items
+- **Summary cards**: Fleet-wide totals for upcoming and needed maintenance
+
 ## Pending: RevenueCat Subscription Integration
 
 The user wants subscription-based pricing ($19.99/month, $149.99/year) for the Saguaro Mobile app.
