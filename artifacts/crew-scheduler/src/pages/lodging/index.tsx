@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { Building2, ChevronLeft, ChevronRight, Plus, Download, Mail, Pencil, Trash2, X, FileSpreadsheet } from "lucide-react";
+import { Building2, ChevronLeft, ChevronRight, Plus, Download, Pencil, Trash2, X, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -12,25 +12,30 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 
-const ROOMS = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"];
 const MONTH_NAMES = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December",
 ];
 const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
-const ROOM_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  C1:  { bg: "#d1fae5", text: "#065f46", border: "#6ee7b7" },
-  C2:  { bg: "#dbeafe", text: "#1e40af", border: "#93c5fd" },
-  C3:  { bg: "#fce7f3", text: "#9d174d", border: "#f9a8d4" },
-  C4:  { bg: "#fef3c7", text: "#92400e", border: "#fcd34d" },
-  C5:  { bg: "#ede9fe", text: "#5b21b6", border: "#c4b5fd" },
-  C6:  { bg: "#ffedd5", text: "#c2410c", border: "#fdba74" },
-  C7:  { bg: "#cffafe", text: "#155e75", border: "#67e8f9" },
-  C8:  { bg: "#f0fdf4", text: "#166534", border: "#86efac" },
-  C9:  { bg: "#fdf2f8", text: "#86198f", border: "#e879f9" },
-  C10: { bg: "#f1f5f9", text: "#334155", border: "#94a3b8" },
-};
+// Rotating palette — assigned by room's sorted index
+const COLOR_PALETTE = [
+  { bg: "#d1fae5", text: "#065f46", border: "#6ee7b7" },
+  { bg: "#dbeafe", text: "#1e40af", border: "#93c5fd" },
+  { bg: "#fce7f3", text: "#9d174d", border: "#f9a8d4" },
+  { bg: "#fef3c7", text: "#92400e", border: "#fcd34d" },
+  { bg: "#ede9fe", text: "#5b21b6", border: "#c4b5fd" },
+  { bg: "#ffedd5", text: "#c2410c", border: "#fdba74" },
+  { bg: "#cffafe", text: "#155e75", border: "#67e8f9" },
+  { bg: "#f0fdf4", text: "#166534", border: "#86efac" },
+  { bg: "#fdf2f8", text: "#86198f", border: "#e879f9" },
+  { bg: "#f1f5f9", text: "#334155", border: "#94a3b8" },
+];
+
+function colorForRoom(room: string, allRooms: string[]): typeof COLOR_PALETTE[0] {
+  const idx = allRooms.indexOf(room);
+  return COLOR_PALETTE[((idx < 0 ? 0 : idx) % COLOR_PALETTE.length)];
+}
 
 type Booking = {
   id: number;
@@ -60,10 +65,8 @@ function nightsBetween(a: string, b: string): number {
 }
 
 function fmtDate(d: string): string {
-  // "2026-04-05" → "Apr 5"
   const parts = d.split("-");
-  const month = MONTH_NAMES[parseInt(parts[1]) - 1].slice(0, 3);
-  return `${month} ${parseInt(parts[2])}`;
+  return `${MONTH_NAMES[parseInt(parts[1]) - 1].slice(0, 3)} ${parseInt(parts[2])}`;
 }
 
 function getRowSegments(bookings: Booking[], year: number, month: number): Segment[] {
@@ -104,16 +107,13 @@ function getRowSegments(bookings: Booking[], year: number, month: number): Segme
 }
 
 function buildCsvContent(bookings: Booking[], year: number, month: number): string {
-  const header = ["Room", "Guest Name", "Check-In Date", "Check-Out Date", "Nights Stayed", "Notes"];
+  const header = ["Room / Unit", "Guest Name", "Check-In Date", "Check-Out Date", "Nights Stayed", "Notes"];
   const mStr = monthStr(year, month);
   const mEnd = `${mStr}-${String(daysInMonth(year, month)).padStart(2, "0")}`;
   const rows = bookings
     .filter((b) => b.checkIn <= mEnd && b.checkOut >= `${mStr}-01`)
     .sort((a, b) => a.room.localeCompare(b.room) || a.checkIn.localeCompare(b.checkIn))
-    .map((b) => {
-      const nights = nightsBetween(b.checkIn, b.checkOut);
-      return [b.room, b.guestName, b.checkIn, b.checkOut, nights, b.notes ?? ""];
-    });
+    .map((b) => [b.room, b.guestName, b.checkIn, b.checkOut, nightsBetween(b.checkIn, b.checkOut), b.notes ?? ""]);
   return [header, ...rows].map((row) => row.map((c) => `"${c}"`).join(",")).join("\n");
 }
 
@@ -132,27 +132,33 @@ function buildEmailBody(bookings: Booking[], year: number, month: number): strin
 
   const totalNights = sorted.reduce((s, b) => s + nightsBetween(b.checkIn, b.checkOut), 0);
   const occupiedRooms = new Set(sorted.map((b) => b.room)).size;
-
-  const header = `Company Lodging Report — ${label}`;
-  const summary = `Summary: ${sorted.length} booking(s), ${occupiedRooms} room(s) occupied, ${totalNights} total guest-night(s)`;
-  const divider = "-".repeat(70);
+  const divider = "-".repeat(72);
 
   const rows = sorted.map((b) => {
     const nights = nightsBetween(b.checkIn, b.checkOut);
     const note = b.notes ? ` | Note: ${b.notes}` : "";
-    return `  ${b.room.padEnd(4)} | ${b.guestName.padEnd(20)} | In: ${b.checkIn}  Out: ${b.checkOut}  (${nights} night${nights !== 1 ? "s" : ""})${note}`;
+    return `  ${b.room.padEnd(12)} | ${b.guestName.padEnd(20)} | In: ${b.checkIn}  Out: ${b.checkOut}  (${nights} night${nights !== 1 ? "s" : ""})${note}`;
   });
 
-  const colHeader = `  Room | Guest Name             | Check-In / Check-Out / Nights`;
-  return [header, summary, divider, colHeader, divider, ...rows, divider].join("\n");
+  const colHeader = `  Room / Unit  | Guest Name             | Check-In / Check-Out / Nights`;
+  return [
+    `Company Lodging Report — ${label}`,
+    `Summary: ${sorted.length} booking(s), ${occupiedRooms} room(s) occupied, ${totalNights} total guest-night(s)`,
+    divider,
+    colHeader,
+    divider,
+    ...rows,
+    divider,
+  ].join("\n");
 }
 
-const DEFAULT_FORM = { room: "C1", guestName: "", checkIn: "", checkOut: "", notes: "" };
+const DEFAULT_FORM = { room: "", guestName: "", checkIn: "", checkOut: "", notes: "" };
 type BookingForm = typeof DEFAULT_FORM;
 
 function BookingDialog({
   open,
   editing,
+  recentRooms,
   onClose,
   onSave,
   onDelete,
@@ -160,6 +166,7 @@ function BookingDialog({
 }: {
   open: boolean;
   editing: Booking | null;
+  recentRooms: string[];
   onClose: () => void;
   onSave: (form: BookingForm) => void;
   onDelete?: () => void;
@@ -185,9 +192,10 @@ function BookingDialog({
 
   if (!open) return null;
 
-  const nights = form.checkIn && form.checkOut && form.checkOut > form.checkIn
-    ? nightsBetween(form.checkIn, form.checkOut)
-    : null;
+  const nights =
+    form.checkIn && form.checkOut && form.checkOut > form.checkIn
+      ? nightsBetween(form.checkIn, form.checkOut)
+      : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
@@ -200,17 +208,29 @@ function BookingDialog({
         </div>
 
         <div className="space-y-3">
+          {/* Room — free text with datalist suggestions */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Room</label>
-            <select
+            <label className="text-sm font-medium">Room / Unit</label>
+            <input
+              list="room-suggestions"
               className="w-full px-3 py-2 text-sm border border-border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary/30"
+              placeholder="e.g. Room 12, Cabin B, Suite 3…"
               value={form.room}
               onChange={(e) => setForm((p) => ({ ...p, room: e.target.value }))}
-            >
-              {ROOMS.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-            </select>
+              autoComplete="off"
+            />
+            {recentRooms.length > 0 && (
+              <datalist id="room-suggestions">
+                {recentRooms.map((r) => (
+                  <option key={r} value={r} />
+                ))}
+              </datalist>
+            )}
+            {recentRooms.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Recent: {recentRooms.slice(0, 6).join(", ")}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -246,7 +266,9 @@ function BookingDialog({
 
           {nights !== null && (
             <div className="flex items-center gap-2 px-3 py-2 bg-primary/5 rounded-md border border-primary/20">
-              <span className="text-sm text-primary font-medium">{nights} night{nights !== 1 ? "s" : ""} stay</span>
+              <span className="text-sm text-primary font-medium">
+                {nights} night{nights !== 1 ? "s" : ""} stay
+              </span>
               {form.checkIn && form.checkOut && (
                 <span className="text-xs text-muted-foreground">
                   · {fmtDate(form.checkIn)} → {fmtDate(form.checkOut)}
@@ -256,7 +278,9 @@ function BookingDialog({
           )}
 
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Notes <span className="text-muted-foreground">(optional)</span></label>
+            <label className="text-sm font-medium">
+              Notes <span className="text-muted-foreground">(optional)</span>
+            </label>
             <textarea
               className="w-full min-h-[60px] px-3 py-2 text-sm border border-border rounded-md bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/30"
               placeholder="Any notes…"
@@ -278,12 +302,14 @@ function BookingDialog({
             <div />
           )}
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+            <Button variant="outline" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
             <Button
               size="sm"
               disabled={
                 isSaving ||
-                !form.room ||
+                !form.room.trim() ||
                 !form.guestName.trim() ||
                 !form.checkIn ||
                 !form.checkOut ||
@@ -309,7 +335,7 @@ export default function LodgingPage() {
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
-  const [prefilledRoom, setPrefilledRoom] = useState<string | null>(null);
+  const [prefilledRoom, setPrefilledRoom] = useState<string>("");
   const [prefilledDay, setPrefilledDay] = useState<number | null>(null);
 
   const mStr = monthStr(year, month);
@@ -351,6 +377,24 @@ export default function LodgingPage() {
     },
   });
 
+  // Unique rooms sorted for this month's calendar
+  const calendarRooms = useMemo(
+    () => [...new Set(bookings.map((b) => b.room))].sort(),
+    [bookings]
+  );
+
+  // All rooms ever seen (for suggestions in dialog)
+  const recentRooms = useMemo(() => calendarRooms, [calendarRooms]);
+
+  const bookingsByRoom = useMemo(() => {
+    const map: Record<string, Booking[]> = {};
+    for (const b of bookings) {
+      if (!map[b.room]) map[b.room] = [];
+      map[b.room].push(b);
+    }
+    return map;
+  }, [bookings]);
+
   function prevMonth() {
     if (month === 1) { setYear((y) => y - 1); setMonth(12); }
     else setMonth((m) => m - 1);
@@ -361,16 +405,16 @@ export default function LodgingPage() {
     else setMonth((m) => m + 1);
   }
 
-  function openAdd(room?: string, day?: number) {
+  function openAdd(room = "", day?: number) {
     setEditingBooking(null);
-    setPrefilledRoom(room ?? null);
+    setPrefilledRoom(room);
     setPrefilledDay(day ?? null);
     setDialogOpen(true);
   }
 
   function openEdit(b: Booking) {
     setEditingBooking(b);
-    setPrefilledRoom(null);
+    setPrefilledRoom("");
     setPrefilledDay(null);
     setDialogOpen(true);
   }
@@ -402,8 +446,7 @@ export default function LodgingPage() {
   function emailReport() {
     const body = buildEmailBody(bookings, year, month);
     const subject = encodeURIComponent(`Company Lodging Report — ${MONTH_NAMES[month - 1]} ${year}`);
-    const encodedBody = encodeURIComponent(body);
-    window.open(`mailto:?subject=${subject}&body=${encodedBody}`);
+    window.open(`mailto:?subject=${subject}&body=${encodeURIComponent(body)}`);
   }
 
   function downloadAndEmail() {
@@ -411,32 +454,15 @@ export default function LodgingPage() {
     setTimeout(() => emailReport(), 400);
   }
 
-  const bookingsByRoom = useMemo(() => {
-    const map: Record<string, Booking[]> = {};
-    for (const room of ROOMS) map[room] = [];
-    for (const b of bookings) {
-      if (map[b.room]) map[b.room].push(b);
-    }
-    return map;
-  }, [bookings]);
-
   const dayNumbers = Array.from({ length: totalDays }, (_, i) => i + 1);
 
-  // Reset prefilled values when dialog closes
-  React.useEffect(() => {
-    if (!dialogOpen) {
-      setPrefilledRoom(null);
-      setPrefilledDay(null);
-    }
-  }, [dialogOpen]);
-
-  const dialogDefault: BookingForm = useMemo(() => ({
-    room: prefilledRoom ?? "C1",
-    guestName: "",
-    checkIn: prefilledDay ? `${mStr}-${String(prefilledDay).padStart(2, "0")}` : "",
-    checkOut: "",
-    notes: "",
-  }), [prefilledRoom, prefilledDay, mStr]);
+  const dialogInitialRoom = useMemo(
+    () =>
+      editingBooking
+        ? editingBooking.room
+        : prefilledRoom || "",
+    [editingBooking, prefilledRoom]
+  );
 
   return (
     <div className="space-y-5">
@@ -447,7 +473,9 @@ export default function LodgingPage() {
             <Building2 className="h-6 w-6 text-primary" />
             Company Lodging
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">Rooms C1 – C10 · Check-in, nights stayed, check-out</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Enter any room or unit name · Check-in, nights stayed, check-out
+          </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={downloadCsv} className="gap-1.5">
@@ -464,13 +492,19 @@ export default function LodgingPage() {
 
       {/* Month Navigation */}
       <div className="flex items-center gap-3">
-        <button onClick={prevMonth} className="p-1.5 rounded-md border border-border hover:bg-muted transition-colors">
+        <button
+          onClick={prevMonth}
+          className="p-1.5 rounded-md border border-border hover:bg-muted transition-colors"
+        >
           <ChevronLeft className="h-4 w-4" />
         </button>
         <h2 className="text-lg font-semibold min-w-[160px] text-center">
           {MONTH_NAMES[month - 1]} {year}
         </h2>
-        <button onClick={nextMonth} className="p-1.5 rounded-md border border-border hover:bg-muted transition-colors">
+        <button
+          onClick={nextMonth}
+          className="p-1.5 rounded-md border border-border hover:bg-muted transition-colors"
+        >
           <ChevronRight className="h-4 w-4" />
         </button>
       </div>
@@ -481,49 +515,67 @@ export default function LodgingPage() {
           <Card>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground font-medium">Total Bookings</p>
-              <p className="text-2xl font-bold text-foreground">{bookings.length}</p>
+              <p className="text-2xl font-bold">{bookings.length}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground font-medium">Rooms Occupied</p>
-              <p className="text-2xl font-bold text-foreground">
-                {new Set(bookings.map((b) => b.room)).size}
-              </p>
+              <p className="text-2xl font-bold">{calendarRooms.length}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground font-medium">Total Guest-Nights</p>
-              <p className="text-2xl font-bold text-foreground">
-                {bookings.reduce((sum, b) => sum + nightsBetween(b.checkIn, b.checkOut), 0)}
+              <p className="text-2xl font-bold">
+                {bookings.reduce((s, b) => s + nightsBetween(b.checkIn, b.checkOut), 0)}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground font-medium">Rooms Available</p>
-              <p className="text-2xl font-bold text-foreground">
-                {ROOMS.length - new Set(bookings.map((b) => b.room)).size}
+              <p className="text-xs text-muted-foreground font-medium">Avg. Stay Length</p>
+              <p className="text-2xl font-bold">
+                {bookings.length === 0
+                  ? "—"
+                  : (
+                      bookings.reduce((s, b) => s + nightsBetween(b.checkIn, b.checkOut), 0) /
+                      bookings.length
+                    ).toFixed(1)}
               </p>
             </CardContent>
           </Card>
         </div>
       )}
 
-      {/* Calendar Grid — full width, all days visible */}
+      {/* Calendar Grid */}
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
             <div className="py-16 text-center text-muted-foreground">Loading…</div>
+          ) : calendarRooms.length === 0 ? (
+            <div className="py-16 text-center space-y-3">
+              <Building2 className="h-10 w-10 text-muted-foreground mx-auto" />
+              <p className="font-medium">No bookings for {MONTH_NAMES[month - 1]} {year}</p>
+              <p className="text-sm text-muted-foreground">
+                Add your first booking — enter any room or unit name you use.
+              </p>
+              <Button size="sm" onClick={() => openAdd()} className="gap-1.5 mx-auto mt-2">
+                <Plus className="h-3.5 w-3.5" /> Add Booking
+              </Button>
+            </div>
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table
                 className="text-xs border-collapse"
-                style={{ tableLayout: "fixed", width: "100%", minWidth: `${totalDays * 28 + 60}px` }}
+                style={{
+                  tableLayout: "fixed",
+                  width: "100%",
+                  minWidth: `${totalDays * 28 + 120}px`,
+                }}
               >
                 <colgroup>
-                  <col style={{ width: "56px" }} />
+                  <col style={{ width: "96px" }} />
                   {dayNumbers.map((d) => (
                     <col key={d} />
                   ))}
@@ -533,8 +585,7 @@ export default function LodgingPage() {
                   <tr className="bg-muted/40 border-b border-border/50">
                     <th className="sticky left-0 bg-muted/60 z-10" />
                     {dayNumbers.map((d) => {
-                      const dateStr = `${mStr}-${String(d).padStart(2, "0")}`;
-                      const dow = new Date(dateStr).getDay();
+                      const dow = new Date(`${mStr}-${String(d).padStart(2, "0")}`).getDay();
                       const isWeekend = dow === 0 || dow === 6;
                       return (
                         <th
@@ -551,12 +602,11 @@ export default function LodgingPage() {
                   </tr>
                   {/* Day number row */}
                   <tr className="bg-muted/60 border-b border-border">
-                    <th className="px-2 py-2 text-left font-semibold text-muted-foreground border-r border-border sticky left-0 bg-muted/80 z-10 text-xs">
-                      Room
+                    <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-r border-border sticky left-0 bg-muted/80 z-10 text-xs">
+                      Room / Unit
                     </th>
                     {dayNumbers.map((d) => {
-                      const dateStr = `${mStr}-${String(d).padStart(2, "0")}`;
-                      const dow = new Date(dateStr).getDay();
+                      const dow = new Date(`${mStr}-${String(d).padStart(2, "0")}`).getDay();
                       const isWeekend = dow === 0 || dow === 6;
                       const isToday =
                         d === today.getDate() &&
@@ -580,9 +630,9 @@ export default function LodgingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {ROOMS.map((room, ri) => {
-                    const segments = getRowSegments(bookingsByRoom[room], year, month);
-                    const colors = ROOM_COLORS[room];
+                  {calendarRooms.map((room, ri) => {
+                    const segments = getRowSegments(bookingsByRoom[room] ?? [], year, month);
+                    const colors = colorForRoom(room, calendarRooms);
                     return (
                       <tr
                         key={room}
@@ -590,7 +640,10 @@ export default function LodgingPage() {
                           ri % 2 === 0 ? "bg-background" : "bg-muted/10"
                         }`}
                       >
-                        <td className="px-2 py-1 font-semibold text-foreground border-r border-border sticky left-0 bg-inherit z-10 text-xs">
+                        <td
+                          className="px-3 py-1 font-semibold text-foreground border-r border-border sticky left-0 bg-inherit z-10 text-xs truncate max-w-[96px]"
+                          title={room}
+                        >
                           {room}
                         </td>
                         {segments.map((seg, si) =>
@@ -624,7 +677,7 @@ export default function LodgingPage() {
                                   border: `1px solid ${colors.border}`,
                                   color: colors.text,
                                 }}
-                                title={`${seg.booking.guestName}\nIn: ${seg.booking.checkIn}\nOut: ${seg.booking.checkOut}\n${nightsBetween(seg.booking.checkIn, seg.booking.checkOut)} nights`}
+                                title={`${seg.booking.guestName}\nIn: ${seg.booking.checkIn}  Out: ${seg.booking.checkOut}\n${nightsBetween(seg.booking.checkIn, seg.booking.checkOut)} nights`}
                                 onClick={() => openEdit(seg.booking)}
                               >
                                 <span
@@ -655,20 +708,24 @@ export default function LodgingPage() {
         </CardContent>
       </Card>
 
-      {/* Bookings Detail List */}
+      {/* Booking Details List */}
       {bookings.length > 0 && !isLoading && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               {MONTH_NAMES[month - 1]} {year} — Booking Details
             </h3>
-            <span className="text-xs text-muted-foreground">{bookings.length} booking{bookings.length !== 1 ? "s" : ""}</span>
+            <span className="text-xs text-muted-foreground">
+              {bookings.length} booking{bookings.length !== 1 ? "s" : ""}
+            </span>
           </div>
 
-          {/* Column headers */}
-          <div className="grid gap-1 text-xs font-semibold text-muted-foreground px-4 py-2 bg-muted/40 rounded-lg"
-               style={{ gridTemplateColumns: "56px 1fr 120px 80px 120px 1fr auto" }}>
-            <span>Room</span>
+          {/* Column header */}
+          <div
+            className="grid gap-1 text-xs font-semibold text-muted-foreground px-4 py-2 bg-muted/40 rounded-lg"
+            style={{ gridTemplateColumns: "1fr 1fr 110px 70px 110px 1fr auto" }}
+          >
+            <span>Room / Unit</span>
             <span>Guest Name</span>
             <span>Check-In</span>
             <span>Nights</span>
@@ -682,33 +739,37 @@ export default function LodgingPage() {
               .sort((a, b) => a.room.localeCompare(b.room) || a.checkIn.localeCompare(b.checkIn))
               .map((b) => {
                 const nights = nightsBetween(b.checkIn, b.checkOut);
-                const colors = ROOM_COLORS[b.room] ?? ROOM_COLORS["C1"];
+                const colors = colorForRoom(b.room, calendarRooms);
                 return (
                   <Card key={b.id} className="overflow-hidden">
                     <CardContent className="p-0">
                       <div className="flex items-center">
-                        <div className="w-1.5 self-stretch flex-shrink-0" style={{ backgroundColor: colors.border }} />
+                        <div
+                          className="w-1.5 self-stretch flex-shrink-0"
+                          style={{ backgroundColor: colors.border }}
+                        />
                         <div
                           className="grid items-center gap-3 flex-1 px-4 py-3 text-sm min-w-0"
-                          style={{ gridTemplateColumns: "56px 1fr 120px 80px 120px 1fr auto" }}
+                          style={{ gridTemplateColumns: "1fr 1fr 110px 70px 110px 1fr auto" }}
                         >
-                          <div
-                            className="w-9 h-9 rounded-md flex items-center justify-center text-xs font-bold flex-shrink-0"
-                            style={{ backgroundColor: colors.bg, color: colors.text }}
-                          >
-                            {b.room}
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div
+                              className="w-8 h-8 rounded-md flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                              style={{ backgroundColor: colors.bg, color: colors.text }}
+                            >
+                              {b.room.slice(0, 3)}
+                            </div>
+                            <span className="font-semibold text-xs truncate" title={b.room}>
+                              {b.room}
+                            </span>
                           </div>
-                          <span className="font-semibold text-foreground truncate">{b.guestName}</span>
-                          <div className="text-xs">
-                            <span className="font-medium text-foreground">{b.checkIn}</span>
-                          </div>
+                          <span className="font-medium text-sm truncate">{b.guestName}</span>
+                          <span className="text-xs text-foreground font-medium">{b.checkIn}</span>
                           <div className="text-xs text-center">
                             <span className="font-bold text-primary">{nights}</span>
                             <span className="text-muted-foreground"> night{nights !== 1 ? "s" : ""}</span>
                           </div>
-                          <div className="text-xs">
-                            <span className="font-medium text-foreground">{b.checkOut}</span>
-                          </div>
+                          <span className="text-xs text-foreground font-medium">{b.checkOut}</span>
                           <span className="text-xs text-muted-foreground truncate">{b.notes ?? "—"}</span>
                           <button
                             onClick={() => openEdit(b)}
@@ -734,11 +795,13 @@ export default function LodgingPage() {
                 </div>
                 <div>
                   <span className="text-muted-foreground">Rooms used: </span>
-                  <span className="font-semibold">{new Set(bookings.map((b) => b.room)).size} of {ROOMS.length}</span>
+                  <span className="font-semibold">{calendarRooms.length}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Total guest-nights: </span>
-                  <span className="font-semibold">{bookings.reduce((s, b) => s + nightsBetween(b.checkIn, b.checkOut), 0)}</span>
+                  <span className="font-semibold">
+                    {bookings.reduce((s, b) => s + nightsBetween(b.checkIn, b.checkOut), 0)}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -746,24 +809,12 @@ export default function LodgingPage() {
         </div>
       )}
 
-      {bookings.length === 0 && !isLoading && (
-        <Card className="p-12 text-center">
-          <Building2 className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-          <p className="font-medium mb-1">No bookings for {MONTH_NAMES[month - 1]} {year}</p>
-          <p className="text-sm text-muted-foreground mb-4">
-            Click any cell in the calendar to add a booking, or use the button above.
-          </p>
-          <Button size="sm" onClick={() => openAdd()} className="gap-1.5 mx-auto">
-            <Plus className="h-3.5 w-3.5" /> Add First Booking
-          </Button>
-        </Card>
-      )}
-
       {/* Booking Dialog */}
       <BookingDialog
-        key={dialogOpen ? "open" : "closed"}
+        key={dialogOpen ? `open-${editingBooking?.id ?? "new"}` : "closed"}
         open={dialogOpen}
         editing={editingBooking}
+        recentRooms={recentRooms}
         onClose={() => setDialogOpen(false)}
         onSave={handleSave}
         onDelete={editingBooking ? handleDelete : undefined}
