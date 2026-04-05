@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -14,11 +14,14 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { PurchasesPackage } from "react-native-purchases";
 import { useSubscription } from "@/lib/revenuecat";
 
 const BRAND_GREEN = "#1a9e4a";
 const BRAND_GREEN_DARK = "#147a39";
-const BRAND_GREEN_LIGHT = "#22c55e";
+
+const MONTHLY_ID = "$rc_monthly";
+const ANNUAL_ID = "$rc_annual";
 
 const FEATURES = [
   { icon: "briefcase-outline" as const, text: "Unlimited job scheduling & management" },
@@ -28,23 +31,69 @@ const FEATURES = [
   { icon: "chatbubbles-outline" as const, text: "Job chat, photos & electronic forms" },
 ];
 
+function getLabel(pkg: PurchasesPackage): string {
+  if (pkg.identifier === ANNUAL_ID) return "Annual";
+  if (pkg.identifier === MONTHLY_ID) return "Monthly";
+  return pkg.product.title;
+}
+
+function getSubtitle(pkg: PurchasesPackage): string {
+  if (pkg.identifier === ANNUAL_ID) return "Billed once per year";
+  if (pkg.identifier === MONTHLY_ID) return "Billed every month";
+  return "";
+}
+
+function getPeriod(pkg: PurchasesPackage): string {
+  if (pkg.identifier === ANNUAL_ID) return "/ year";
+  if (pkg.identifier === MONTHLY_ID) return "/ month";
+  return "";
+}
+
+function computeSavings(
+  pkg: PurchasesPackage,
+  monthly: PurchasesPackage | undefined
+): string | null {
+  if (pkg.identifier !== ANNUAL_ID || !monthly) return null;
+  const annualized = monthly.product.price * 12;
+  if (annualized <= 0) return null;
+  const savings = Math.round(((annualized - pkg.product.price) / annualized) * 100);
+  return savings > 0 ? `Save ${savings}%` : null;
+}
+
+function narrowError(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === "string") return e;
+  return "Something went wrong. Please try again.";
+}
+
 export default function PaywallScreen() {
-  const { offerings, isLoading, purchase, restore, isPurchasing, isRestoring } = useSubscription();
+  const { offerings, isLoading, purchase, restore, isPurchasing, isRestoring, isSubscribed } =
+    useSubscription();
 
   const [selectedIndex, setSelectedIndex] = useState<number>(1);
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successVisible, setSuccessVisible] = useState(false);
 
+  useEffect(() => {
+    if (isSubscribed) {
+      router.replace("/(tabs)");
+    }
+  }, [isSubscribed]);
+
   const currentOffering = offerings?.current;
-  const packages = currentOffering?.availablePackages ?? [];
+  const packages: PurchasesPackage[] = currentOffering?.availablePackages ?? [];
 
   const sortedPackages = [...packages].sort((a, b) => {
-    const order = ["$rc_monthly", "$rc_annual"];
-    return order.indexOf(a.packageType) - order.indexOf(b.packageType);
+    const order = [MONTHLY_ID, ANNUAL_ID];
+    const ai = order.indexOf(a.identifier);
+    const bi = order.indexOf(b.identifier);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
   });
 
-  const selectedPackage = sortedPackages[selectedIndex] ?? sortedPackages[0];
+  const monthlyPkg = sortedPackages.find((p) => p.identifier === MONTHLY_ID);
+  const selectedPackage: PurchasesPackage | undefined =
+    sortedPackages[selectedIndex] ?? sortedPackages[0];
 
   const handleSubscribe = () => {
     if (!selectedPackage) return;
@@ -54,12 +103,14 @@ export default function PaywallScreen() {
 
   const confirmPurchase = async () => {
     setConfirmVisible(false);
+    if (!selectedPackage) return;
     try {
       await purchase(selectedPackage);
       setSuccessVisible(true);
-    } catch (e: any) {
-      if (e?.userCancelled) return;
-      setErrorMsg(e?.message ?? "Purchase failed. Please try again.");
+    } catch (e: unknown) {
+      const rcErr = e as { userCancelled?: boolean; message?: string };
+      if (rcErr?.userCancelled) return;
+      setErrorMsg(narrowError(e));
     }
   };
 
@@ -67,27 +118,10 @@ export default function PaywallScreen() {
     setErrorMsg(null);
     try {
       await restore();
-    } catch (e: any) {
-      setErrorMsg(e?.message ?? "Restore failed. Please try again.");
+      router.replace("/(tabs)");
+    } catch (e: unknown) {
+      setErrorMsg(narrowError(e));
     }
-  };
-
-  const handleSuccessContinue = () => {
-    setSuccessVisible(false);
-    router.replace("/(tabs)");
-  };
-
-  const getSavingsBadge = (pkg: typeof sortedPackages[number]) => {
-    if (pkg.packageType === "$rc_annual") {
-      const monthlyPkg = sortedPackages.find((p) => p.packageType === "$rc_monthly");
-      if (monthlyPkg) {
-        const monthlyAnnualized = monthlyPkg.product.price * 12;
-        const yearlyPrice = pkg.product.price;
-        const savings = Math.round(((monthlyAnnualized - yearlyPrice) / monthlyAnnualized) * 100);
-        if (savings > 0) return `Save ${savings}%`;
-      }
-    }
-    return null;
   };
 
   return (
@@ -99,7 +133,7 @@ export default function PaywallScreen() {
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
-          colors={[BRAND_GREEN_DARK, BRAND_GREEN, "#2dd4bf"]}
+          colors={[BRAND_GREEN_DARK, BRAND_GREEN, "#22c55e"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.header}
@@ -137,8 +171,7 @@ export default function PaywallScreen() {
           ) : (
             sortedPackages.map((pkg, i) => {
               const isSelected = i === selectedIndex;
-              const savings = getSavingsBadge(pkg);
-              const isYearly = pkg.packageType === "$rc_annual";
+              const savings = computeSavings(pkg, monthlyPkg);
               return (
                 <TouchableOpacity
                   key={pkg.identifier}
@@ -153,11 +186,9 @@ export default function PaywallScreen() {
                       </View>
                       <View>
                         <Text style={[styles.planName, isSelected && styles.planNameSelected]}>
-                          {isYearly ? "Annual" : "Monthly"}
+                          {getLabel(pkg)}
                         </Text>
-                        <Text style={styles.planSubtitle}>
-                          {isYearly ? "Billed once per year" : "Billed every month"}
-                        </Text>
+                        <Text style={styles.planSubtitle}>{getSubtitle(pkg)}</Text>
                       </View>
                     </View>
                     <View style={styles.planRight}>
@@ -169,9 +200,7 @@ export default function PaywallScreen() {
                       <Text style={[styles.planPrice, isSelected && styles.planPriceSelected]}>
                         {pkg.product.priceString}
                       </Text>
-                      <Text style={styles.planPeriod}>
-                        {isYearly ? "/ year" : "/ month"}
-                      </Text>
+                      <Text style={styles.planPeriod}>{getPeriod(pkg)}</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -179,7 +208,7 @@ export default function PaywallScreen() {
             })
           )}
 
-          {errorMsg && (
+          {errorMsg !== null && (
             <View style={styles.errorBox}>
               <Ionicons name="warning-outline" size={16} color="#dc2626" />
               <Text style={styles.errorText}>{errorMsg}</Text>
@@ -228,15 +257,13 @@ export default function PaywallScreen() {
             <Ionicons name="card-outline" size={36} color={BRAND_GREEN} style={styles.modalIcon} />
             <Text style={styles.modalTitle}>Confirm Purchase</Text>
             <Text style={styles.modalBody}>
-              You're subscribing to{" "}
+              You&apos;re subscribing to{" "}
               <Text style={styles.modalBold}>
-                {selectedPackage?.product.title ?? "Saguaro Pro"}
+                {selectedPackage ? getLabel(selectedPackage) : "Saguaro Pro"}
               </Text>{" "}
               for{" "}
-              <Text style={styles.modalBold}>
-                {selectedPackage?.product.priceString}
-              </Text>
-              {selectedPackage?.packageType === "$rc_annual" ? " per year" : " per month"}.
+              <Text style={styles.modalBold}>{selectedPackage?.product.priceString}</Text>
+              {selectedPackage?.identifier === ANNUAL_ID ? " per year" : " per month"}.
             </Text>
             <View style={styles.modalBtns}>
               <TouchableOpacity
@@ -263,7 +290,13 @@ export default function PaywallScreen() {
             <Text style={styles.modalBody}>
               Your subscription is active. You now have full access to all features.
             </Text>
-            <TouchableOpacity style={styles.modalConfirm} onPress={handleSuccessContinue}>
+            <TouchableOpacity
+              style={styles.modalConfirm}
+              onPress={() => {
+                setSuccessVisible(false);
+                router.replace("/(tabs)");
+              }}
+            >
               <Text style={styles.modalConfirmText}>Get Started</Text>
             </TouchableOpacity>
           </View>
@@ -462,16 +495,9 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 16,
-    shadowColor: BRAND_GREEN,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
   },
   ctaBtnDisabled: {
     backgroundColor: "#a7f3d0",
-    shadowOpacity: 0,
-    elevation: 0,
   },
   ctaBtnText: {
     fontSize: 17,

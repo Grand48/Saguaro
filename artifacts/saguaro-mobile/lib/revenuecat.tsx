@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from "react";
 import { Platform } from "react-native";
-import Purchases from "react-native-purchases";
+import Purchases, { PurchasesPackage, CustomerInfo } from "react-native-purchases";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import Constants from "expo-constants";
 
@@ -44,10 +44,9 @@ export function initializeRevenueCat() {
 function useSubscriptionContext() {
   const customerInfoQuery = useQuery({
     queryKey: ["revenuecat", "customer-info"],
-    queryFn: async () => {
+    queryFn: async (): Promise<CustomerInfo | null> => {
       if (IS_WEB) return null;
-      const info = await Purchases.getCustomerInfo();
-      return info;
+      return Purchases.getCustomerInfo();
     },
     staleTime: 60 * 1000,
   });
@@ -56,14 +55,13 @@ function useSubscriptionContext() {
     queryKey: ["revenuecat", "offerings"],
     queryFn: async () => {
       if (IS_WEB) return null;
-      const offerings = await Purchases.getOfferings();
-      return offerings;
+      return Purchases.getOfferings();
     },
     staleTime: 300 * 1000,
   });
 
   const purchaseMutation = useMutation({
-    mutationFn: async (packageToPurchase: any) => {
+    mutationFn: async (packageToPurchase: PurchasesPackage): Promise<CustomerInfo> => {
       const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
       return customerInfo;
     },
@@ -71,7 +69,7 @@ function useSubscriptionContext() {
   });
 
   const restoreMutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<CustomerInfo> => {
       return Purchases.restorePurchases();
     },
     onSuccess: () => customerInfoQuery.refetch(),
@@ -82,8 +80,8 @@ function useSubscriptionContext() {
     customerInfoQuery.data?.entitlements.active?.[REVENUECAT_ENTITLEMENT_IDENTIFIER] !== undefined;
 
   return {
-    customerInfo: customerInfoQuery.data,
-    offerings: offeringsQuery.data,
+    customerInfo: customerInfoQuery.data ?? null,
+    offerings: offeringsQuery.data ?? null,
     isSubscribed,
     isLoading: !IS_WEB && (customerInfoQuery.isLoading || offeringsQuery.isLoading),
     purchase: purchaseMutation.mutateAsync,

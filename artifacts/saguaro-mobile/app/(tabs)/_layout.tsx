@@ -2,7 +2,13 @@ import { BlurView } from "expo-blur";
 import { Tabs, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import {
+  Platform,
+  StyleSheet,
+  View,
+  useColorScheme,
+  ActivityIndicator,
+} from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { useSubscription } from "@/lib/revenuecat";
 
@@ -20,6 +26,14 @@ export default function TabLayout() {
       router.replace("/paywall");
     }
   }, [isLoading, isSubscribed]);
+
+  if (isLoading || !isSubscribed) {
+    return (
+      <View style={styles.gate}>
+        <ActivityIndicator size="large" color="#1a9e4a" />
+      </View>
+    );
+  }
 
   return (
     <Tabs
@@ -118,3 +132,12 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  gate: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fff",
+  },
+});
