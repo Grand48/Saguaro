@@ -2,10 +2,10 @@
   "expo": {
     "name": "Saguaro",
     "slug": "saguaro-mobile",
-    "version": "2.4.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "saguaro-mobile",
+    "scheme": "saguaro",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,10 +15,26 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.saguaro.fieldops"
+      "bundleIdentifier": "com.saguaro.fieldops",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Saguaro uses your camera to capture job site photos.",
+        "NSPhotoLibraryUsageDescription": "Saguaro accesses your photo library to attach images to jobs.",
+        "NSLocationWhenInUseUsageDescription": "Saguaro uses your location to track job sites and crew check-ins.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Saguaro uses your location to track job sites and crew check-ins.",
+        "NSMicrophoneUsageDescription": "Saguaro uses your microphone for voice notes on job sites."
+      }
     },
     "android": {
-      "package": "com.saguaro.fieldops"
+      "package": "com.saguaro.fieldops",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/images/icon.png"
@@ -31,8 +47,27 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Saguaro accesses your photo library to attach images to jobs.",
+          "cameraPermission": "Saguaro uses your camera to capture job site photos."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Saguaro uses your location to track job sites and crew check-ins."
+        }
+      ],
+      "react-native-purchases"
     ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    },
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
