@@ -25,8 +25,9 @@ if (process.env.EXPO_PUBLIC_DOMAIN) {
 
 try {
   initializeRevenueCat();
-} catch (err: any) {
-  Alert.alert("RevenueCat Unavailable", err?.message ?? "Unknown error");
+} catch (err: unknown) {
+  const msg = err instanceof Error ? err.message : "Unknown error";
+  Alert.alert("RevenueCat Unavailable", msg);
 }
 
 SplashScreen.preventAutoHideAsync();

@@ -17,6 +17,7 @@ import {
   listPackages,
   createPackages,
   attachProductsToPackage,
+  Duration,
   type App,
   type Product,
   type Project,
@@ -32,14 +33,14 @@ const MONTHLY_PRODUCT_IDENTIFIER = "saguaro_pro_monthly";
 const MONTHLY_PLAY_STORE_IDENTIFIER = "saguaro_pro_monthly:monthly";
 const MONTHLY_DISPLAY_NAME = "Saguaro Pro Monthly";
 const MONTHLY_TITLE = "Saguaro Pro Monthly";
-const MONTHLY_DURATION = "P1M";
+const MONTHLY_DURATION: Duration = Duration.P1M;
 const MONTHLY_PRICE_MICROS = 19990000;
 
 const YEARLY_PRODUCT_IDENTIFIER = "saguaro_pro_yearly";
 const YEARLY_PLAY_STORE_IDENTIFIER = "saguaro_pro_yearly:yearly";
 const YEARLY_DISPLAY_NAME = "Saguaro Pro Yearly";
 const YEARLY_TITLE = "Saguaro Pro Yearly";
-const YEARLY_DURATION = "P1Y";
+const YEARLY_DURATION: Duration = Duration.P1Y;
 const YEARLY_PRICE_MICROS = 149990000;
 
 const APP_STORE_APP_NAME = "Saguaro iOS";
@@ -156,7 +157,7 @@ async function seedRevenueCat() {
     label: string,
     productIdentifier: string,
     isTestStore: boolean,
-    duration: string,
+    duration: Duration,
     displayName: string,
     title: string
   ): Promise<Product> => {
