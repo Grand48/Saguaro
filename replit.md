@@ -153,17 +153,16 @@ Fleet management with maintenance tracking.
 - **Card badges**: Each vehicle card shows live counts of needed/upcoming maintenance items
 - **Summary cards**: Fleet-wide totals for upcoming and needed maintenance
 
-## Pending: RevenueCat Subscription Integration
+## RevenueCat Subscription Paywall
 
-The user wants subscription-based pricing ($19.99/month, $149.99/year) for the Saguaro Mobile app.
+Hard paywall on Saguaro Mobile — free download, paywall on launch.
 
-**NOTE:** User dismissed the Replit RevenueCat integration (connector ID: `connector:ccfg_revenuecat_01KED80FZSMH99H5FHQWSX7D4M`). To proceed, the user must either:
-  - Complete the OAuth flow via the Replit integrations panel, OR
-  - Provide a RevenueCat V2 API key (stored as secret `REVENUECAT_API_KEY`) to be used without the Replit integration
-
-**To implement (once credentials are available):**
-1. Run the seed script at `scripts/src/seedRevenueCat.ts` to create the RevenueCat project, products, entitlements, and offerings
-2. Set env vars: `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`, `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`, `REVENUECAT_PROJECT_ID`
-3. Create `artifacts/saguaro-mobile/lib/revenuecat.tsx` with SubscriptionProvider + useSubscription hook
-4. Add paywall screen at `artifacts/saguaro-mobile/app/paywall.tsx`
-5. Wrap root layout in SubscriptionProvider and gate app features behind subscription check
+- **Entitlement identifier**: `pro`
+- **Products**: `saguaro_pro_monthly` ($19.99/mo, P1M), `saguaro_pro_yearly` ($149.99/yr, P1Y)
+- **Package identifiers**: `$rc_monthly`, `$rc_annual`
+- **Gate**: `artifacts/saguaro-mobile/app/(tabs)/_layout.tsx` redirects to `/paywall` when `!isSubscribed && !isLoading`; web is always treated as subscribed (web preview only, not the real target)
+- **Paywall screen**: `artifacts/saguaro-mobile/app/paywall.tsx` — full-screen branded screen with green gradient header, feature list, plan cards (monthly/yearly, live prices from RC), Subscribe CTA, Restore Purchases, confirmation modal
+- **Provider**: `artifacts/saguaro-mobile/lib/revenuecat.tsx` — `initializeRevenueCat()`, `SubscriptionProvider`, `useSubscription` hook. Skips initialization on web.
+- **Seed script**: `scripts/src/seedRevenueCat.ts` — run via `pnpm --filter @workspace/scripts run seed:revenuecat` after setting `REVENUECAT_API_KEY` (V2 secret key)
+- **Env vars set**: `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`, `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY` (all set to `appc517cfb48a` — update with real keys after running seed script)
+- **NOTE**: To activate purchases, the user must provide their RevenueCat V2 secret key as `REVENUECAT_API_KEY` and run the seed script. RevenueCat connector ID (for Replit OAuth integration): `connector:ccfg_revenuecat_01KED80FZSMH99H5FHQWSX7D4M`

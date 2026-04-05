@@ -1,9 +1,10 @@
 import { BlurView } from "expo-blur";
-import { Tabs } from "expo-router";
+import { Tabs, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect } from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 import { useColors } from "@/hooks/useColors";
+import { useSubscription } from "@/lib/revenuecat";
 
 export default function TabLayout() {
   const colors = useColors();
@@ -11,6 +12,14 @@ export default function TabLayout() {
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+
+  const { isSubscribed, isLoading } = useSubscription();
+
+  useEffect(() => {
+    if (!isLoading && !isSubscribed) {
+      router.replace("/paywall");
+    }
+  }, [isLoading, isSubscribed]);
 
   return (
     <Tabs

@@ -27,3 +27,10 @@ timeoutMs = 20000
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+EXPO_PUBLIC_REVENUECAT_TEST_API_KEY = "appc517cfb48a"
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY = "appc517cfb48a"
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY = "appc517cfb48a"
