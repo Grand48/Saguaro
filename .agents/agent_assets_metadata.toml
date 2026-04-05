@@ -6,3 +6,27 @@ id = "KNS0xY4w-RJCSBFeGeO8r"
 uri = "file://artifacts/saguaro-mobile/assets/images/icon.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "E3EfKatP4mKsISm0c9cLE"
+uri = "file://attached_assets/generated_images/icon_option_a.png"
+type = "image"
+title = "icon option A bold green"
+
+[[generated]]
+id = "RmXd3xb7ReRBCXaVTdxEH"
+uri = "file://attached_assets/generated_images/icon_option_b.png"
+type = "image"
+title = "icon option B dark theme"
+
+[[generated]]
+id = "B6Sz-zw2JpodL4mAkqLhC"
+uri = "file://attached_assets/generated_images/icon_option_c.png"
+type = "image"
+title = "icon option C gradient"
+
+[[generated]]
+id = "sqgidr_xH-h6weQej1VBP"
+uri = "file://attached_assets/generated_images/icon_option_d.png"
+type = "image"
+title = "icon option D S letter"
