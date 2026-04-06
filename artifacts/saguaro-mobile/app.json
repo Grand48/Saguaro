@@ -60,8 +60,7 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Saguaro uses your location to track job sites and crew check-ins."
         }
-      ],
-      "react-native-purchases"
+      ]
     ],
     "extra": {
       "eas": {
