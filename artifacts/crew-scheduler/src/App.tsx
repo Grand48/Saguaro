@@ -18,30 +18,38 @@ import SideQuests from "./pages/quests/index";
 import EmployeeRequests from "./pages/requests/index";
 import Lodging from "./pages/lodging/index";
 import Vehicles from "./pages/vehicles/index";
+import PrivacyPolicy from "./pages/privacy";
+import Support from "./pages/support";
 
 const queryClient = new QueryClient();
 
 function Router() {
   return (
-    <AppLayout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/jobs" component={JobsList} />
-        <Route path="/jobs/:id" component={JobDetail} />
-        <Route path="/crew" component={CrewList} />
-        <Route path="/crew/:id" component={CrewDetail} />
-        <Route path="/locations" component={LocationsList} />
-        <Route path="/locations/:id" component={LocationDetail} />
-        <Route path="/time-off" component={TimeOff} />
-        <Route path="/time-clock" component={TimeClock} />
-        <Route path="/notifications" component={Notifications} />
-        <Route path="/quests" component={SideQuests} />
-        <Route path="/requests" component={EmployeeRequests} />
-        <Route path="/lodging" component={Lodging} />
-        <Route path="/vehicles" component={Vehicles} />
-        <Route component={NotFound} />
-      </Switch>
-    </AppLayout>
+    <Switch>
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/support" component={Support} />
+      <Route>
+        <AppLayout>
+          <Switch>
+            <Route path="/" component={Dashboard} />
+            <Route path="/jobs" component={JobsList} />
+            <Route path="/jobs/:id" component={JobDetail} />
+            <Route path="/crew" component={CrewList} />
+            <Route path="/crew/:id" component={CrewDetail} />
+            <Route path="/locations" component={LocationsList} />
+            <Route path="/locations/:id" component={LocationDetail} />
+            <Route path="/time-off" component={TimeOff} />
+            <Route path="/time-clock" component={TimeClock} />
+            <Route path="/notifications" component={Notifications} />
+            <Route path="/quests" component={SideQuests} />
+            <Route path="/requests" component={EmployeeRequests} />
+            <Route path="/lodging" component={Lodging} />
+            <Route path="/vehicles" component={Vehicles} />
+            <Route component={NotFound} />
+          </Switch>
+        </AppLayout>
+      </Route>
+    </Switch>
   );
 }
 
