@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "KNS0xY4w-RJCSBFeGeO8r"
@@ -30,3 +29,159 @@ id = "sqgidr_xH-h6weQej1VBP"
 uri = "file://attached_assets/generated_images/icon_option_d.png"
 type = "image"
 title = "icon option D S letter"
+
+[[generated]]
+id = "yEgJ7RoS4tOyQngDbQ3rw"
+uri = "file://attached_assets/generated_images/screenshot_01_dashboard.png"
+type = "image"
+title = "screenshot dashboard"
+
+[[generated]]
+id = "X05G36qgX0cBw3r8nCBYV"
+uri = "file://attached_assets/generated_images/screenshot_02_jobs.png"
+type = "image"
+title = "screenshot jobs list"
+
+[[generated]]
+id = "xYZJDtDRQtnkaM4MpUnKi"
+uri = "file://attached_assets/generated_images/screenshot_03_crew.png"
+type = "image"
+title = "screenshot crew"
+
+[[generated]]
+id = "8wCkHzBItwzRlFm5cIOrH"
+uri = "file://attached_assets/generated_images/screenshot_04_timeclock.png"
+type = "image"
+title = "screenshot time clock"
+
+[[generated]]
+id = "wjISKlG3nI23WZgxZwpMB"
+uri = "file://attached_assets/generated_images/screenshot_05_vehicles.png"
+type = "image"
+title = "screenshot vehicles"
+
+[[generated]]
+id = "uodcAv-7oVuP4S6C4abdc"
+uri = "file://attached_assets/generated_images/screenshot_06_forms.png"
+type = "image"
+title = "screenshot forms"
+
+[[generated]]
+id = "oA0NQoakQ-YakhfbtGFkf"
+uri = "file://attached_assets/generated_images/screenshot_07_notifications.png"
+type = "image"
+title = "screenshot notifications"
+
+[[generated]]
+id = "5IOyRAt0Lxm25DnLu57D4"
+uri = "file://attached_assets/generated_images/screenshot_08_lodging.png"
+type = "image"
+title = "screenshot lodging"
+
+[[generated]]
+id = "bJWsFUR8fwX3hVT48lu0L"
+uri = "file://attached_assets/generated_images/screenshot_09_quests.png"
+type = "image"
+title = "screenshot quests"
+
+[[generated]]
+id = "oGmI1LY8o5nbLoYV9kFkH"
+uri = "file://attached_assets/generated_images/screenshot_10_requests.png"
+type = "image"
+title = "screenshot requests"
+
+[[generated]]
+id = "hFQOWmIT55xSHfCj-Oav5"
+uri = "file://attached_assets/generated_images/preview_01_hero.png"
+type = "image"
+title = "app preview hero"
+
+[[generated]]
+id = "cxSA-3QJf3Wt1Mmxwm6o2"
+uri = "file://attached_assets/generated_images/preview_02_features.png"
+type = "image"
+title = "app preview features"
+
+[[generated]]
+id = "pKcgVRlz7s7AGgjpSJAGO"
+uri = "file://attached_assets/generated_images/preview_03_field.png"
+type = "image"
+title = "app preview field"
+
+[[outputs]]
+id = "OrfgVDbF-OvA7lOUUgbPw"
+uri = "file://attached_assets/generated_images/screenshot_01_dashboard.png"
+type = "image"
+title = "Screenshot 1 — Dashboard"
+
+[[outputs]]
+id = "2160DQ_xrIndiuN1KtWFU"
+uri = "file://attached_assets/generated_images/screenshot_02_jobs.png"
+type = "image"
+title = "Screenshot 2 — Jobs"
+
+[[outputs]]
+id = "wdx6kDwtCcLNOYU3E3eVZ"
+uri = "file://attached_assets/generated_images/screenshot_03_crew.png"
+type = "image"
+title = "Screenshot 3 — Crew"
+
+[[outputs]]
+id = "MEfloOPoSyXJs3wydLrSz"
+uri = "file://attached_assets/generated_images/screenshot_04_timeclock.png"
+type = "image"
+title = "Screenshot 4 — Time Clock"
+
+[[outputs]]
+id = "TWofwSRmvMcHF4EK3NNmi"
+uri = "file://attached_assets/generated_images/screenshot_05_vehicles.png"
+type = "image"
+title = "Screenshot 5 — Vehicles"
+
+[[outputs]]
+id = "mwccHaavAl_1hQhGauo-e"
+uri = "file://attached_assets/generated_images/screenshot_06_forms.png"
+type = "image"
+title = "Screenshot 6 — Forms"
+
+[[outputs]]
+id = "6R4zJMmLQbd-jD_h4eEbZ"
+uri = "file://attached_assets/generated_images/screenshot_07_notifications.png"
+type = "image"
+title = "Screenshot 7 — Notifications"
+
+[[outputs]]
+id = "mAwdAuY17OZHNNHya3Ggj"
+uri = "file://attached_assets/generated_images/screenshot_08_lodging.png"
+type = "image"
+title = "Screenshot 8 — Lodging"
+
+[[outputs]]
+id = "lPMSPFB46MU8YsOWlmJtT"
+uri = "file://attached_assets/generated_images/screenshot_09_quests.png"
+type = "image"
+title = "Screenshot 9 — Side Quests"
+
+[[outputs]]
+id = "5RxIyey5mr_CbD895ec1U"
+uri = "file://attached_assets/generated_images/screenshot_10_requests.png"
+type = "image"
+title = "Screenshot 10 — Requests"
+
+[[outputs]]
+id = "R7OKyUSpALp_Tl5Yeakm9"
+uri = "file://attached_assets/generated_images/preview_01_hero.png"
+type = "image"
+title = "App Preview 1 — Hero"
+
+[[outputs]]
+id = "nw55abFMCHLPPibcqIi6Q"
+uri = "file://attached_assets/generated_images/preview_02_features.png"
+type = "image"
+title = "App Preview 2 — Features"
+
+[[outputs]]
+id = "AnghrN0bysYpBLHT_LEF1"
+uri = "file://attached_assets/generated_images/preview_03_field.png"
+type = "image"
+title = "App Preview 3 — Built for the Field"
