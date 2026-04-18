@@ -12,7 +12,7 @@ export default function PrivacyPolicy() {
         <p style={{ color: "#666", margin: 0 }}>Last updated: April 18, 2026</p>
       </div>
 
-      <p>Saguaro ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use our field crew management app.</p>
+      <p>Grand48 ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and safeguard your information when you use the Saguaro field crew management app.</p>
 
       <h2 style={{ fontSize: 20, fontWeight: 700, marginTop: 32 }}>Information We Collect</h2>
       <p>We collect the following types of information to provide and improve our services:</p>
@@ -72,7 +72,7 @@ export default function PrivacyPolicy() {
       </p>
 
       <hr style={{ margin: "40px 0", border: "none", borderTop: "1px solid #e5e5e5" }} />
-      <p style={{ color: "#999", fontSize: 14 }}>© 2026 Saguaro. All rights reserved.</p>
+      <p style={{ color: "#999", fontSize: 14 }}>© 2026 Grand48. All rights reserved.</p>
     </div>
   );
 }

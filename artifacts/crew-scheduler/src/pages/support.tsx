@@ -38,7 +38,7 @@ export default function Support() {
       <p>Yes. All your data is securely stored on our servers and accessible from any device.</p>
 
       <hr style={{ margin: "40px 0", border: "none", borderTop: "1px solid #e5e5e5" }} />
-      <p style={{ color: "#999", fontSize: 14 }}>© 2026 Saguaro. All rights reserved. · <a href="/privacy" style={{ color: "#999" }}>Privacy Policy</a></p>
+      <p style={{ color: "#999", fontSize: 14 }}>© 2026 Grand48. All rights reserved. · <a href="/privacy" style={{ color: "#999" }}>Privacy Policy</a></p>
     </div>
   );
 }
